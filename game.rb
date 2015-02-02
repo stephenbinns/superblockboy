@@ -38,7 +38,9 @@ class PlayState < GameState
   def load_level(filename)
     @tiles = Tileset.new({ :filename => filename })
     @tiles.load
+
     Walker.create(:x => 10 * 16, :y => 3 * 16, :direction => :left)
+    Walker.create(:x => 15 * 16, :y => 3 * 16, :direction => :right)
   end
 
   def draw
@@ -83,9 +85,19 @@ class Tileset
     end
   end
 
-  def tile_at_object(object)
+  def tile_at_object(object, direction = :center)
     if object.respond_to? :bb
-      tile_at(object.bb.midbottom[0], object.bb.midbottom[1])
+      ox, oy = object.bb.midbottom[0], object.bb.midbottom[1]
+
+      if direction == :left
+        ox = object.bb.midleft[0] 
+      elsif direction == :right
+        ox = object.bb.midright[0]
+      elsif direction == :below
+        oy += @block_height + 8
+      end
+          
+      tile_at(ox, oy)
     else
       raise 'Object does not respond to bb'
     end
@@ -212,8 +224,10 @@ class Lava < GameObject
   end
 end
 
+
+
 class Walker < GameObject
-  trait :bounding_box
+  trait :bounding_box, :debug => true
   traits :collision_detection, :velocity, :timer
 
   def setup
@@ -222,12 +236,8 @@ class Walker < GameObject
     
     @animation = @animations[:walk] 
 
-    if @options[:direction] == :left
-      self.factor_x = -1
-      self.velocity_x = -2
-    else
-      self.velocity_x = 2
-    end
+
+    set_direction @options[:direction]
 
     self.zorder = 300
     self.max_velocity = 10
@@ -238,6 +248,17 @@ class Walker < GameObject
     cache_bounding_box
   end
 
+  def set_direction(direction)
+    if direction == :left
+      self.factor_x = -1
+      self.velocity_x = -2
+    else
+      self.factor_x = 1
+      self.velocity_x = 2
+    end
+    @direction = direction
+  end
+
   def update 
     @image = @animation.next
     return unless self.game_state.viewport.inside? self
@@ -246,12 +267,43 @@ class Walker < GameObject
     if tile.instance_of? Block
       self.y = tile.bb.top-1
     end
+
+    next_tile = self.game_state.tiles.tile_at_object(self, @direction)
+
+    if next_tile.x == 0 || next_tile.instance_of?(Block)
+      if @direction == :left
+        set_direction :right
+      else
+        set_direction :left
+      end
+    end
+
+  end
+end
+class Bouncer < Walker
+  def setup
+    super
+  end
+
+  def update
+    super
+
+    every(100) {
+      tile = self.game_state.tiles.tile_at_object(self, :below)
+      if tile != @last_tile
+        puts tile
+      end
+      @last_tile = tile
+      if tile.instance_of? Block
+        self.velocity_y = -1
+        puts 'boing'
+      end
+    }
   end
 end
 
-
 class Fireball < GameObject
-  trait :bounding_box, :debug => true, :scale => 0.3
+  trait :bounding_box, :debug => true, :scale => 1.0 # solves bounding issues but is perhaps TOO big
   traits :collision_detection, :velocity, :timer
 
   def setup
