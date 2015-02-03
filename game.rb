@@ -34,7 +34,7 @@ class PlayState < GameState
   end
 
   def load_level(filename)
-    @tiles = Tileset.new({ :filename => filename })
+    @tiles = Tileset.new({ :filename => filename }, self)
     @tiles.load
 
     Walker.create(:x => 10 * 16, :y => 3 * 16, :direction => :left)

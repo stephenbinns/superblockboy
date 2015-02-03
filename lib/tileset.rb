@@ -1,5 +1,5 @@
 class Tileset
-  def initialize(options = {})
+  def initialize(options = {}, game_state)
     @block_height = options[:block_height] || 16
     @block_width = options[:block_width] || 16
     filename = options[:filename]
@@ -10,6 +10,8 @@ class Tileset
 
     @height = @lines.size
     @width = @lines[0].split(',').length
+
+    game_state.viewport.game_area = [0, 0, (@width - 1) * @block_width, @height * @block_height]
   end
 
   def load
