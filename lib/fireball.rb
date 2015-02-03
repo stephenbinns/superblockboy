@@ -34,7 +34,8 @@ class Fireball < GameObject
     tiles = self.game_state.tiles.tiles_around_object(self)
     self.each_collision(tiles) do | me, tile |
       if self.y > tile.bb.top
-        self.velocity_x = -5
+        self.velocity_x *= -1
+        self.factor_x *= -1
       else
         self.velocity_y = -5
       end

@@ -42,7 +42,7 @@ class Walker < GameObject
 
     next_tile = self.game_state.tiles.tile_at_object(self, @direction)
 
-    if next_tile && next_tile.x == 0 || next_tile.instance_of?(Block)
+    if next_tile && (next_tile.x + self.x == self.width / 2 ) || next_tile.instance_of?(Block)
       if @direction == :left
         set_direction :right
       else
