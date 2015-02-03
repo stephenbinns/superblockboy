@@ -1,4 +1,4 @@
-class Walker < GameObject
+class Walker < Enemy
   trait :bounding_box, :debug => true
   traits :collision_detection, :velocity, :timer
 
@@ -7,7 +7,6 @@ class Walker < GameObject
     @animations.frame_names = { :walk => 0..2 }
     
     @animation = @animations[:walk] 
-
 
     set_direction @options[:direction]
 
@@ -34,11 +33,8 @@ class Walker < GameObject
   def update 
     @image = @animation.next
     return unless self.game_state.viewport.inside? self
-
-    tile = self.game_state.tiles.tile_at_object(self)
-    if tile.instance_of? Block
-      self.y = tile.bb.top-1
-    end
+    
+    check_collides_with_block
 
     next_tile = self.game_state.tiles.tile_at_object(self, @direction)
 
@@ -53,15 +49,40 @@ class Walker < GameObject
   end
 end
 
-class Bouncer < Walker
+class Enemy < GameObject
+  def check_collides_with_block
+    tile = self.game_state.tiles.tile_at_object(self)
+    if tile.instance_of? Block
+      self.y = tile.bb.top-1
+    end
+  end
+end
+
+class Bouncer < Enemy
+  trait :bounding_box, :debug => true
+  traits :collision_detection, :velocity, :timer
+
   def setup
-    super
+    @animations = Chingu::Animation.new(:file => "enemies_16x16.png")
+    @animations.frame_names = { :still => 4..4, :bouncer => 5..7 }
+    
+    @animation = @animations[:still]
+    self.zorder = 300
+    self.max_velocity = 10
+    self.acceleration_y = 0.5 # gravity!
+    self.rotation_center = :bottom_center
+
+    update
+    cache_bounding_box
   end
 
   def update
-    super
+    @image = @animation.next
+    return unless self.game_state.viewport.inside? self
+    check_collides_with_block
 
-    every(100) {
+    every(500) {
+      @animation = @animations[:bouncer]
       tile = self.game_state.tiles.tile_at_object(self, :below)
       if tile != @last_tile
         puts tile

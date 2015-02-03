@@ -39,6 +39,7 @@ class PlayState < GameState
 
     Walker.create(:x => 10 * 16, :y => 3 * 16, :direction => :left)
     Walker.create(:x => 15 * 16, :y => 3 * 16, :direction => :right)
+    Bouncer.create(:x => 50 * 16, :y => 3 * 16)
   end
 
   def draw
