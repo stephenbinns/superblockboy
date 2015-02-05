@@ -1,12 +1,12 @@
 class Fireball < GameObject
-  trait :bounding_box, :debug => true, :scale => 1.0 # solves bounding issues but is perhaps TOO big
+  trait :bounding_box, debug: false, scale: 0.5 # solves bounding issues but is perhaps TOO big
   traits :collision_detection, :velocity, :timer
 
   def setup
-    @animations = Chingu::Animation.new(:file => "items_16x16.png")
-    @animations.frame_names = { :fire => 8..11 }
-    
-    @animation = @animations[:fire] 
+    @animations = Chingu::Animation.new(file: 'items_16x16.png')
+    @animations.frame_names = { fire: 8..11 }
+
+    @animation = @animations[:fire]
 
     if @options[:direction] == :left
       self.factor_x = -1
@@ -25,20 +25,25 @@ class Fireball < GameObject
     after(2000) { destroy }
   end
 
-  def update 
+  def update
     @image = @animation.next
 
     # todo sometime the bounce doesn't work correctly
     # e.g when standing on a high block
     # possibly due to speed being too high?
-    tiles = self.game_state.tiles.tiles_around_object(self)
-    self.each_collision(tiles) do | me, tile |
-      if self.y > tile.bb.top
+    tiles = game_state.tiles.tiles_around_object(self)
+    each_collision(tiles) do | _me, tile |
+      if y > tile.bb.top
         self.velocity_x *= -1
         self.factor_x *= -1
       else
         self.velocity_y = -5
       end
+    end
+
+    each_collision(Enemy.all_enemies) do | me, enemy |
+      me.destroy
+      enemy.destroy
     end
   end
 end
