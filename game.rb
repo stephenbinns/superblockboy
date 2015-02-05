@@ -29,7 +29,7 @@ class PlayState < GameState
     self.input = { escape: :exit }
     viewport.game_area = [0, 0, 3500, 2000]
 
-    load_level 'media/level1.csv'
+    load_level 'media/level1-1.csv'
     @player = BlockBoy.create(x: 100, y: 100)
   end
 

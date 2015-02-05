@@ -32,7 +32,7 @@ class Fireball < GameObject
     # e.g when standing on a high block
     # possibly due to speed being too high?
     tiles = game_state.tiles.tiles_around_object(self)
-    each_collision(tiles) do | _me, tile |
+    each_collision(tiles) do | _, tile |
       if y > tile.bb.top
         self.velocity_x *= -1
         self.factor_x *= -1

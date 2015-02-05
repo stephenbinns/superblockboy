@@ -11,7 +11,7 @@ class Tileset
     @height = @lines.size
     @width = @lines[0].split(',').length
 
-    game_state.viewport.game_area = [0, 0, (@width - 1) * @block_width, @height * @block_height]
+    game_state.viewport.game_area = [0, 0, (@width - 0.5) * @block_width, (@height - 0.5) * @block_height]
   end
 
   def load
@@ -23,11 +23,13 @@ class Tileset
 
         if [8, 9, 10, 11, 16, 17, 18, 19].any? { |b| b == block }
           Background.create(x: b_x, y: b_y, image: @tileset[block])
-        elsif [4, 5, 12].any? { |b| b == block }
+        elsif [4, 5, 12, 45].any? { |b| b == block }
           Lava.create(x: b_x, y: b_y, image: @tileset[block])
         else
           Block.create(x: b_x, y: b_y, image: @tileset[block])
         end
+        # 47 door
+
       end
     end
   end
