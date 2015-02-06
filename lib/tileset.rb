@@ -25,6 +25,8 @@ class Tileset
           Background.create(x: b_x, y: b_y, image: @tileset[block])
         elsif [4, 5, 12, 45].any? { |b| b == block }
           Lava.create(x: b_x, y: b_y, image: @tileset[block])
+        elsif block == 47
+          Door.create(x: b_y, y: b_y, image: @tileset[block])
         else
           Block.create(x: b_x, y: b_y, image: @tileset[block])
         end

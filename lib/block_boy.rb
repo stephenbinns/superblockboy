@@ -81,6 +81,11 @@ class BlockBoy < GameObject
       break
     end
 
+    each.collision(Door) do | _, _ |
+      puts 'level complete'
+      self.game_state.next_level
+    end
+
     each_collision(Enemy.all_enemies) do |_me, _enemy|
       self.x = 100
       self.y = 100
