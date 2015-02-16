@@ -9,6 +9,7 @@ class BlockBoy < GameObject
       [:up, :w] => :jump,
       [:x] => :fireball,
       [:holding_z] => :run
+      [:r] => :reset
     }
 
     @animations = Chingu::Animation.new(file: 'player_16x16.png')
@@ -33,6 +34,7 @@ class BlockBoy < GameObject
     self.factor_x = -1
     @direction = :left
     @animation = @animations[:right]
+    @speed = 2
   end
 
   def holding_right
@@ -40,10 +42,16 @@ class BlockBoy < GameObject
     self.factor_x = 1
     @direction = :right
     @animation = @animations[:right]
+    @speed = 2
   end
 
   def run
     @speed = 4
+  end
+
+  def reset
+    spawn = game_state.tiles.spawn
+    set_spawn spawn[0], spawn[1]
   end
 
   def fireball
@@ -108,6 +116,11 @@ class BlockBoy < GameObject
 
     each_collision(Lava) do |_me, _lava|
       die
+      if @direction == :right
+        set_spawn @spawn_x - @speed, @spawn_y
+      else
+        set_spawn @spawn_x + @speed, @spawn_y
+      end
       break
     end
 
