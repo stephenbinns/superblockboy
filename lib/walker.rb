@@ -1,10 +1,9 @@
 class Enemy < GameObject
+  trait :effect
   def check_collides_with_block
     tiles = game_state.tiles.tiles_around_object(self)
     each_collision(tiles) do | _me, tile |
-      if tile.instance_of? Block
-        self.y = tile.bb.top - 1
-      end
+      self.y = tile.bb.top - 1
     end
   end
 
@@ -14,10 +13,27 @@ class Enemy < GameObject
     out.concat Bouncer.all
     out.concat Flyer.all
   end
+
+  def die
+    self.collidable = false # Stops further collisions in each_collsiion() etc.
+    self.rotation_rate = 5
+    self.scale_rate = 0.005
+    self.fade_rate = -1
+    after(2000) { destroy }
+  end
+
+  def inside?
+    x, y = game_state.player.x, game_state.player.y
+
+    x_ok = x >= @x - $window.width &&  @x <= x + $window.width
+    y_ok = @y >= y - $window.height && @y <= y + $window.height
+
+    x_ok && y_ok
+  end
 end
 
 class Flyer < Enemy
-  trait :bounding_box, debug: true
+  trait :bounding_box, debug: false
   traits :collision_detection, :velocity, :timer
 
   def setup
@@ -51,7 +67,14 @@ class Flyer < Enemy
 
   def update
     @image = @animation.next
-    return unless game_state.viewport.inside? self
+
+    unless inside?
+      self.velocity_x = 0
+      self.velocity_y = 0
+      return
+    else
+      set_direction :left if velocity_x == 0
+    end
 
     if x % @origin >= 70
       if @direction == :left
@@ -64,7 +87,7 @@ class Flyer < Enemy
 end
 
 class Walker < Enemy
-  trait :bounding_box, debug: true
+  trait :bounding_box, debug: false
   traits :collision_detection, :velocity, :timer
 
   def setup
@@ -80,7 +103,8 @@ class Walker < Enemy
     self.acceleration_y = 0.5 # gravity!
     self.rotation_center = :bottom_center
 
-    update
+    # update
+    @image = @animation.next
     cache_bounding_box
   end
 
@@ -97,7 +121,14 @@ class Walker < Enemy
 
   def update
     @image = @animation.next
-    return unless game_state.viewport.inside? self
+    unless inside? 
+      self.velocity_y = 0
+      self.velocity_x = 0
+      self.acceleration_y = 0
+    else
+      self.acceleration_y = 0.5
+      set_direction :left if velocity_x == 0
+    end
 
     check_collides_with_block
 
@@ -114,7 +145,7 @@ class Walker < Enemy
 end
 
 class Bouncer < Enemy
-  trait :bounding_box, debug: true
+  trait :bounding_box, debug: false
   traits :collision_detection, :velocity, :timer
 
   def setup
@@ -127,18 +158,17 @@ class Bouncer < Enemy
     self.acceleration_y = 0.5 # gravity!
     self.rotation_center = :bottom_center
 
-    update
+    # update
+    @image = @animation.next
     cache_bounding_box
 
-    every(500) do
+    every(700) do
       self.velocity_y = -7
     end
   end
 
   def update
     @image = @animation.next
-    return unless game_state.viewport.inside? self
-
     check_collides_with_block
   end
 end

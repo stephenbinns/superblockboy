@@ -1,13 +1,14 @@
 class BlockBoy < GameObject
-  trait :bounding_box, scale: 1.00, debug: false
-  traits :timer, :collision_detection, :velocity
+  trait :bounding_box, scale: 0.80, debug: false
+  traits :timer, :collision_detection, :velocity, :effect
 
   def setup
     self.input = {
       [:holding_left, :holding_a] => :holding_left,
       [:holding_right, :holding_d] => :holding_right,
       [:up, :w] => :jump,
-      [:x] => :fireball
+      [:x] => :fireball,
+      [:holding_z] => :run
     }
 
     @animations = Chingu::Animation.new(file: 'player_16x16.png')
@@ -19,7 +20,7 @@ class BlockBoy < GameObject
     @jumping = false
     self.zorder = 300
     self.acceleration_y = 0.5 # gravity!
-    self.max_velocity = 10
+    self.max_velocity = 20
     self.rotation_center = :bottom_center
     @direction = :right
 
@@ -41,31 +42,59 @@ class BlockBoy < GameObject
     @animation = @animations[:right]
   end
 
+  def run
+    @speed = 4
+  end
+
   def fireball
+    return if @dying
     Fireball.create(x: x, y: y - 8, direction: @direction)
   end
 
   def jump
     return if @jumping
     @jumping = true
+
     self.velocity_y = -10
   end
 
   def move(x, y)
+    self.y += y
+
+    return unless collidable
+
     self.x += x
     each_collision(Block) do |_me, _stone_wall|
       self.x = previous_x
       break
     end
+  end
 
-    self.y += y
+  def set_spawn(x, y)
+    @spawn_x = x
+    @spawn_y = y
+  end
+
+  def die
+    self.collidable = false # Stops further collisions in each_collsiion() etc - so fall off map!.
+    @dying = true
+    after(500) do
+      self.x = @spawn_x
+      self.y = @spawn_y
+      self.collidable = true
+      @dying = false
+    end
   end
 
   def update
     @image = @animation.next
 
+    return unless game_state.tiles
+
     tiles = game_state.tiles.tiles_around_object(self)
     each_collision(tiles) do | _me, tile |
+      break if tile.instance_of? JumpPad
+
       if velocity_y < 0  # Hitting the ceiling
         self.y = tile.bb.bottom + image.height * factor_y
         self.velocity_y = 0
@@ -73,23 +102,44 @@ class BlockBoy < GameObject
         @jumping = false
         self.y = tile.bb.top - 1
       end
+
+      set_spawn self.x, self.y
     end
 
     each_collision(Lava) do |_me, _lava|
-      self.x = 100
-      self.y = 100
+      die
       break
     end
 
-    each.collision(Door) do | _, _ |
-      puts 'level complete'
-      self.game_state.next_level
+    each_collision(Door) do | _, _ |
+      game_state.next_level
     end
 
     each_collision(Enemy.all_enemies) do |_me, _enemy|
-      self.x = 100
-      self.y = 100
+     # todo why is y always equal.
+     # puts _enemy
+     # puts self
+     # if _enemy.y >= self.y
+        die
+     # else
+     #   _enemy.die
+     # end
       break
+    end
+
+    each_collision(JumpPad) do | _, tile |
+      if velocity_y < 0
+        self.y = tile.bb.bottom + image.height * factor_y
+        self.velocity_y = 0
+      else
+        @jumping = false
+        self.velocity_y = -20
+        self.y = tile.bb.top - 1
+      end
+    end
+
+    unless game_state.viewport.inside_game_area? self
+      die
     end
 
     @animation = @animations[:none] unless moved?

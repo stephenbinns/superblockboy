@@ -20,40 +20,52 @@ end
 class PlayState < GameState
   traits :viewport, :timer
 
-  attr_reader :tiles
+  attr_reader :tiles, :player
 
   def initialize(options = {})
     super
     $window.caption = 'Block boy'
 
-    self.input = { escape: :exit }
+    self.input = {
+      escape: :exit,
+      s: :next_level
+    }
     viewport.game_area = [0, 0, 3500, 2000]
 
-    @level = 'media/level1-1.csv'
+    @level = 1
 
+    @player = BlockBoy.create(x: 0, y: 0)
     load_level @level
-    @player = BlockBoy.create(x: 100, y: 100)
   end
 
   def next_level
-    if @level == 'media/level1-1.csv'
-      @level = 'media/level1-2.csv'
-      load_level @level
-      player.x player.y = 100, 100
-    end
+    # clean-up previous level
+    Block.destroy_all
+    Door.destroy_all
+    Lava.destroy_all
+    Background.destroy_all
+    JumpPad.destroy_all
+
+    # and enemies
+    Walker.destroy_all
+    Bouncer.destroy_all
+    Flyer.destroy_all
+
+    @level += 1
+    load_level @level
   end
 
-  def load_level(filename)
-    @tiles = Tileset.new({ filename: filename }, self)
+  def load_level(number)
+    puts "loading level #{number}"
+    @tiles = Tileset.new({ filename: "media/level1-#{number}.csv" }, self)
     @tiles.load
 
-    Walker.create(x: 10 * 16, y: 3 * 16, direction: :left)
-    Walker.create(x: 15 * 16, y: 3 * 16, direction: :right)
-    Bouncer.create(x: 17 * 16, y: 3 * 16)
-    Flyer.create(x: 18 * 16, y: 3 * 16)
+    @player.x = @tiles.spawn[0]
+    @player.y = @tiles.spawn[1]
   end
 
   def draw
+    fill(Color.new 0xffaac50e) # weird rendering bug this isn't actually the colour used!
     super
   end
 

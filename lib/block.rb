@@ -19,17 +19,20 @@ class Door < GameObject
   end
 end
 
-class Lava < GameObject
+class JumpPad < GameObject
   trait :bounding_box, debug: false
   trait :collision_detection
 
   def setup
     cache_bounding_box
   end
+end
 
-  def update
-    each_collision(Enemy.all_enemies) do | _me, enemy |
-      enemy.destroy
-    end
+class Lava < GameObject
+  trait :bounding_box, scale: 0.7, debug: false
+  trait :collision_detection
+
+  def setup
+    cache_bounding_box
   end
 end

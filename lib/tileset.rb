@@ -1,4 +1,5 @@
 class Tileset
+  attr_reader :spawn
   def initialize(options = {}, game_state)
     @block_height = options[:block_height] || 16
     @block_width = options[:block_width] || 16
@@ -21,17 +22,29 @@ class Tileset
         block = blocks[x].to_i
         b_x, b_y  = x * @block_width, y * @block_height
 
-        if [8, 9, 10, 11, 16, 17, 18, 19].any? { |b| b == block }
+        if [8, 10, 11, 16, 17, 19, 51, 52, 53, 54, 55, 56, 57].any? { |b| b == block }
           Background.create(x: b_x, y: b_y, image: @tileset[block])
         elsif [4, 5, 12, 45].any? { |b| b == block }
           Lava.create(x: b_x, y: b_y, image: @tileset[block])
+        elsif block == 20
+          JumpPad.create(x: b_x, y: b_y, image: @tileset[block])
         elsif block == 47
-          Door.create(x: b_y, y: b_y, image: @tileset[block])
+          Door.create(x: b_x, y: b_y, image: @tileset[block])
+        elsif block == 60
+          @spawn = [b_x, b_y]
+          Background.create(x: b_x, y: b_y, image: @tileset[9])
+        elsif block == 62
+          Bouncer.create(x: b_x, y: b_y)
+        elsif block == 61
+          Walker.create(x: b_x, y: b_y)
+        elsif block == 63
+          Flyer.create(x: b_x, y: b_y)
+        elsif [9, 18].any? { |b| b == block }
+          # special case don't bother rendering a tile
+          # the same color a background
         else
           Block.create(x: b_x, y: b_y, image: @tileset[block])
         end
-        # 47 door
-
       end
     end
   end
@@ -50,6 +63,7 @@ class Tileset
         oy -= @block_height
       end
 
+      # todo check if this is  y, x not x, y
       tile_at(ox, oy)
     else
       fail 'Object does not respond to bb'
@@ -59,27 +73,28 @@ class Tileset
   def tiles_around_object(object)
     [
       tile_at_object(object, :center),
-      tile_at_object(object, :left),
-      tile_at_object(object, :right),
+      # todo why does this work?
+      #tile_at_object(object, :left),
+      #tile_at_object(object, :right),
       tile_at_object(object, :above),
       tile_at_object(object, :below)
-    ].select { |f| f.instance_of? Block }
+    ].select { |f| f.instance_of?(Block) || f.instance_of?(JumpPad) }
   end
 
   def tile_at(x, y)
     x += x % @block_width
     y += y % @block_height
 
-    y = y / @block_height
-    x = x / @block_width
+    y = (y / @block_height).to_i
+    x = (x / @block_width).to_i
 
-    return if y > @tiles.length
-    return if x > @tiles[0].length
+    return if y > @tiles.length - 1
+    return if x > @tiles[0].length - 1
 
     begin
       @tiles[y][x]
-    rescue
-      puts "Error getting tile: #{x} #{y}"
+    rescue => e
+      puts "Error getting tile: #{x} #{y} - #{e}"
       nil
     end
   end

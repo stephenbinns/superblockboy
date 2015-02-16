@@ -102,7 +102,7 @@ module Chingu
     #
     def inside_game_area?(object)        
       object.x >= @game_area.x && object.x <= @game_area.width &&
-      object.y >= @game_area.x && object.y <= @game_area.height
+      object.y >= @game_area.y && object.y <= @game_area.height
     end
       
     # Returns true object is outside the game area

@@ -43,7 +43,7 @@ class Fireball < GameObject
 
     each_collision(Enemy.all_enemies) do | me, enemy |
       me.destroy
-      enemy.destroy
+      enemy.die
     end
   end
 end
