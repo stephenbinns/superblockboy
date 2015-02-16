@@ -8,7 +8,7 @@ class BlockBoy < GameObject
       [:holding_right, :holding_d] => :holding_right,
       [:up, :w] => :jump,
       [:x] => :fireball,
-      [:holding_z] => :run
+      [:holding_z] => :run,
       [:r] => :reset
     }
 
