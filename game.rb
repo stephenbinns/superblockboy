@@ -13,7 +13,30 @@ class Game < Chingu::Window
 
   def setup
     retrofy
-    switch_game_state(PlayState)
+    switch_game_state(MainMenu)
+  end
+end
+
+class MainMenu < GameState
+  def initialize
+    super
+    @menu = SimpleMenu.new({
+      :menu_items => [
+        ['Easy', PlayState.new ],
+        ['Hardcore', PlayState.new ],
+        ['Bloodlust', PlayState.new ],
+        ['Exit', exit ]
+      ]
+    })
+  end
+
+  def high_score
+    push_game_state(GameStates::EnterName.new(:callback => method(:got_name)))
+  end
+  
+  def got_name(name)
+    puts "Got name: #{name}"
+    exit
   end
 end
 
@@ -50,6 +73,8 @@ class PlayState < GameState
     Walker.destroy_all
     Bouncer.destroy_all
     Flyer.destroy_all
+
+    Fireball.destroy_all
 
     @level += 1
     load_level @level
