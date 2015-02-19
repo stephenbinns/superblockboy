@@ -15,7 +15,14 @@ class Game < Chingu::Window
     retrofy
     transitional_game_state(Chingu::GameStates::FadeTo, :speed => 10)
 
-    switch_game_state(MainMenu)
+    switch_game_state(Intro)
+  end
+end
+
+class Intro < GameState
+  def setup
+    self.input = { :space => MainMenu }
+    Text.create(:y => 320, :font => 'media/digiffiti.ttf', :size => 48, :align => :center)
   end
 end
 
