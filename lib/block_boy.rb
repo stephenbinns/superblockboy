@@ -145,6 +145,8 @@ class BlockBoy < GameObject
      # puts _enemy
      # puts self
      # if _enemy.y >= self.y
+     puts _enemy.bb.bottom
+     puts _me.bb.bottom
         die
      # else
      #   _enemy.die
