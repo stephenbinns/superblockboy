@@ -141,18 +141,14 @@ class BlockBoy < GameObject
     end
 
     each_collision(Enemy.all_enemies) do |_me, _enemy|
-     # todo why is y always equal.
-     # puts _enemy
-     # puts self
-     # if _enemy.y >= self.y
-     puts _enemy.bb.bottom
-     puts _me.bb.bottom
+      if self.bb.bottom < _enemy.bb.bottom
+        _enemy.die
+      else
         die
-     # else
-     #   _enemy.die
-     # end
+      end
       break
     end
+
 
     each_collision(JumpPad) do | _, tile |
       if velocity_y < 0
