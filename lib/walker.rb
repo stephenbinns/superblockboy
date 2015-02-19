@@ -65,6 +65,11 @@ class Flyer < Enemy
     @direction = direction
   end
 
+  def die
+    self.velocity_y = 0.5
+    super
+  end
+
   def update
     @image = @animation.next
 
@@ -134,7 +139,7 @@ class Walker < Enemy
 
     next_tile = game_state.tiles.tile_at_object(self, @direction)
 
-    if next_tile && (next_tile.x + x == width / 2) || next_tile.instance_of?(Block)
+    if next_tile && (next_tile.x + x == width / 2) || next_tile.instance_of?(Block) || next_tile.instance_of?(ChangeDirectionTile)
       if @direction == :left
         set_direction :right
       else

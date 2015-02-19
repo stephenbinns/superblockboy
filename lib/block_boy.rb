@@ -52,10 +52,12 @@ class BlockBoy < GameObject
   def reset
     spawn = game_state.tiles.spawn
     set_spawn spawn[0], spawn[1]
+    die
   end
 
   def fireball
     return if @dying
+    return unless @can_fire
     Fireball.create(x: x, y: y - 8, direction: @direction)
   end
 
@@ -126,6 +128,16 @@ class BlockBoy < GameObject
 
     each_collision(Door) do | _, _ |
       game_state.next_level
+      @can_fire = false
+    end
+
+    each_collision(Coin) do | _, coin |
+      coin.die
+    end
+
+    each_collision(PowerUp) do | _, item |
+      item.die
+      @can_fire = true
     end
 
     each_collision(Enemy.all_enemies) do |_me, _enemy|

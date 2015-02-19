@@ -13,6 +13,8 @@ class Game < Chingu::Window
 
   def setup
     retrofy
+    transitional_game_state(Chingu::GameStates::FadeTo, :speed => 10)
+
     switch_game_state(MainMenu)
   end
 end
@@ -22,12 +24,22 @@ class MainMenu < GameState
     super
     @menu = SimpleMenu.new({
       :menu_items => [
-        ['Easy', PlayState.new ],
-        ['Hardcore', PlayState.new ],
-        ['Bloodlust', PlayState.new ],
-        ['Exit', exit ]
+        ['Easy', PlayState ],
+        ['Hardcore', PlayState ],
+        ['Bloodlust', PlayState ],
+        ['Exit', lambda { exit }]
       ]
     })
+  end
+
+  def draw
+    super
+    @menu.draw
+  end
+
+  def update
+    super
+    @menu.update
   end
 
   def high_score
@@ -68,6 +80,7 @@ class PlayState < GameState
     Lava.destroy_all
     Background.destroy_all
     JumpPad.destroy_all
+    ChangeDirectionTile.destroy_all
 
     # and enemies
     Walker.destroy_all
@@ -75,6 +88,8 @@ class PlayState < GameState
     Flyer.destroy_all
 
     Fireball.destroy_all
+    Coin.destroy_all
+    PowerUp.destroy_all
 
     @level += 1
     load_level @level

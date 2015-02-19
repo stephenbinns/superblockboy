@@ -32,13 +32,18 @@ class Tileset
           Door.create(x: b_x, y: b_y, image: @tileset[block])
         elsif block == 60
           @spawn = [b_x, b_y]
-          Background.create(x: b_x, y: b_y, image: @tileset[9])
         elsif block == 62
           Bouncer.create(x: b_x, y: b_y)
         elsif block == 61
           Walker.create(x: b_x, y: b_y)
         elsif block == 63
           Flyer.create(x: b_x, y: b_y)
+        elsif block == 64 || block == 65
+          ChangeDirectionTile.create(x: b_x, y: b_y, image: @tileset[9]) 
+        elsif block == 66
+          Coin.create(x: b_x, y: b_y)
+        elsif block == 67
+          PowerUp.create(x: b_x, y: b_y)
         elsif [9, 18].any? { |b| b == block }
           # special case don't bother rendering a tile
           # the same color a background
@@ -63,7 +68,6 @@ class Tileset
         oy -= @block_height
       end
 
-      # todo check if this is  y, x not x, y
       tile_at(ox, oy)
     else
       fail 'Object does not respond to bb'
@@ -73,9 +77,6 @@ class Tileset
   def tiles_around_object(object)
     [
       tile_at_object(object, :center),
-      # todo why does this work?
-      #tile_at_object(object, :left),
-      #tile_at_object(object, :right),
       tile_at_object(object, :above),
       tile_at_object(object, :below)
     ].select { |f| f.instance_of?(Block) || f.instance_of?(JumpPad) }
@@ -88,8 +89,8 @@ class Tileset
     y = (y / @block_height).to_i
     x = (x / @block_width).to_i
 
-    return if y > @tiles.length - 1
-    return if x > @tiles[0].length - 1
+    return if y > @height - 1
+    return if x > @width - 1
 
     begin
       @tiles[y][x]

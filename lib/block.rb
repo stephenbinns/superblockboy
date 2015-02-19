@@ -7,6 +7,15 @@ class Block < GameObject
   end
 end
 
+class ChangeDirectionTile < GameObject
+  trait :bounding_box, debug: false
+  trait :collision_detection
+
+  def setup
+    cache_bounding_box
+  end
+end
+
 class Background < GameObject
 end
 
