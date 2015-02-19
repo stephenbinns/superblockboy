@@ -13,49 +13,73 @@ class Game < Chingu::Window
 
   def setup
     retrofy
-    transitional_game_state(Chingu::GameStates::FadeTo, :speed => 10)
-
     switch_game_state(Intro)
   end
 end
 
 class Intro < GameState
+  trait :timer
   def setup
     self.input = { :space => MainMenu }
-    Text.create(:y => 320, :font => 'media/digiffiti.ttf', :size => 48, :align => :center)
+    @text = Text.create(:y => 200, :x => $window.width/2, :font => 'media/digiffiti.ttf', :size => 48, :text => 'Handmadebymogwai')
+    @text.x -= @text.width / 2.2 
+
+    after(1000) { switch_game_state MainMenu }
   end
 end
 
 class MainMenu < GameState
   def initialize
     super
-    @menu = SimpleMenu.new({
+
+    centered_text 'SUPER', 50, Color.new(0xff306230)
+    centered_text 'SUPER', 54, Color.new(0xff0F380F)
+
+    centered_text 'BlockBoy', 90, Color.new(0xff306230)
+    centered_text 'BlockBoy', 94, Color.new(0xff0F380F)
+
+    centered_text '---------', 150, Color.new(0xff306230)
+    centered_text '---------', 154, Color.new(0xff0F380F)
+
+    @menu = CustomMenu.new({
       :menu_items => [
         ['Easy', PlayState ],
         ['Hardcore', PlayState ],
         ['Bloodlust', PlayState ],
         ['Exit', lambda { exit }]
-      ]
+      ],
+      :font => 'media/bubble.ttf',
+      :size => 28,
+      :spacing => 25,
+      :selected_color => Color.new(0xff306230),
+      :unselected_color => Color.new(0xff0F380F),
+      :y => 200
     })
+
+    centered_text '---------', 390, Color.new(0xff306230)
+    centered_text '---------', 394, Color.new(0xff0F380F)
+  end
+
+  def centered_text(string, y, color)
+    text = Text.create(
+      :y => y,
+      :x => $window.width/2,
+      :font => 'media/bubble.ttf',
+      :size => 56,
+      :color => color,
+      :text => string)
+    text.x -= text.image.width / 2 
   end
 
   def draw
     super
+    fill(Color.new 0xffaac50e) # weird rendering bug this isn't actually the colour used!
     @menu.draw
   end
 
   def update
     super
     @menu.update
-  end
-
-  def high_score
-    push_game_state(GameStates::EnterName.new(:callback => method(:got_name)))
-  end
-  
-  def got_name(name)
-    puts "Got name: #{name}"
-    exit
   end
 end
 
