@@ -38,4 +38,13 @@ class Lava < GameObject
   def setup
     cache_bounding_box
   end
+
+  def draw
+    if game_state.viewport.inside? self
+      super
+    end
+  end
+
+  def update
+  end
 end
