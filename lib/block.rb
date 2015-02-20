@@ -1,40 +1,34 @@
-class Block < GameObject
+class ViewPortBlock < GameObject
   trait :bounding_box, debug: false
   trait :collision_detection
 
   def setup
     cache_bounding_box
   end
-end
 
-class ChangeDirectionTile < GameObject
-  trait :bounding_box, debug: false
-  trait :collision_detection
+  def draw
+    if game_state.viewport.inside? self
+      super
+    end
+  end
 
-  def setup
-    cache_bounding_box
+  def update
   end
 end
 
-class Background < GameObject
+class Background < ViewPortBlock
 end
 
-class Door < GameObject
-  trait :bounding_box, debug: false
-  trait :collision_detection
-
-  def setup
-    cache_bounding_box
-  end
+class Block < ViewPortBlock
 end
 
-class JumpPad < GameObject
-  trait :bounding_box, debug: false
-  trait :collision_detection
+class ChangeDirectionTile < ViewPortBlock
+end
 
-  def setup
-    cache_bounding_box
-  end
+class Door < ViewPortBlock
+end
+
+class JumpPad < ViewPortBlock
 end
 
 class Lava < GameObject

@@ -32,14 +32,14 @@ class MainMenu < GameState
   def initialize
     super
 
-    centered_text 'SUPER', 50, Color.new(0xff306230)
-    centered_text 'SUPER', 54, Color.new(0xff0F380F)
+    centered_text 'SUPER', 50, Color.new(0xff306230), 80
+    centered_text 'SUPER', 54, Color.new(0xff0F380F), 80
 
-    centered_text 'BlockBoy', 90, Color.new(0xff306230)
-    centered_text 'BlockBoy', 94, Color.new(0xff0F380F)
+    centered_text 'BlockBoy', 120, Color.new(0xff306230)
+    centered_text 'BlockBoy', 124, Color.new(0xff0F380F)
 
-    centered_text '---------', 150, Color.new(0xff306230)
-    centered_text '---------', 154, Color.new(0xff0F380F)
+    centered_text '---------', 180, Color.new(0xff306230), 28
+    centered_text '---------', 184, Color.new(0xff0F380F), 28
 
     @menu = CustomMenu.new({
       :menu_items => [
@@ -56,16 +56,16 @@ class MainMenu < GameState
       :y => 200
     })
 
-    centered_text '---------', 390, Color.new(0xff306230)
-    centered_text '---------', 394, Color.new(0xff0F380F)
+    centered_text '---------', 395, Color.new(0xff306230), 28
+    centered_text '---------', 399, Color.new(0xff0F380F), 28
   end
 
-  def centered_text(string, y, color)
+  def centered_text(string, y, color, size=56)
     text = Text.create(
       :y => y,
       :x => $window.width/2,
       :font => 'media/bubble.ttf',
-      :size => 56,
+      :size => size,
       :color => color,
       :text => string)
     text.x -= text.image.width / 2 

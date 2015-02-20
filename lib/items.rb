@@ -19,6 +19,12 @@ class Coin < GameObject
     after(100) { destroy }
   end
 
+  def draw
+    if game_state.viewport.inside? self
+      super
+    end
+  end
+
   def update
     @image = @animation.next
   end
@@ -43,6 +49,12 @@ class PowerUp < GameObject
     self.collidable = false # Stops further collisions in each_collsiion() etc.
     self.fade_rate = -3
     after(100) { destroy }
+  end
+
+  def draw
+    if game_state.viewport.inside? self
+      super
+    end
   end
 
   def update

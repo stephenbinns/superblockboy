@@ -14,6 +14,12 @@ class Enemy < GameObject
     out.concat Flyer.all
   end
 
+  def draw
+    if game_state.viewport.inside? self
+      super
+    end
+  end
+
   def die
     self.collidable = false # Stops further collisions in each_collsiion() etc.
     self.rotation_rate = 5

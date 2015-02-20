@@ -34,7 +34,7 @@ class BlockBoy < GameObject
     self.factor_x = -1
     @direction = :left
     @animation = @animations[:right]
-    @speed = 2
+    @speed = 3
   end
 
   def holding_right
@@ -42,7 +42,7 @@ class BlockBoy < GameObject
     self.factor_x = 1
     @direction = :right
     @animation = @animations[:right]
-    @speed = 2
+    @speed = 3
   end
 
   def run
@@ -143,6 +143,7 @@ class BlockBoy < GameObject
     each_collision(Enemy.all_enemies) do |_me, _enemy|
       if self.bb.bottom < _enemy.bb.bottom
         _enemy.die
+        self.velocity_y = -4
       else
         die
       end
