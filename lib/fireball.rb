@@ -1,5 +1,5 @@
 class Fireball < GameObject
-  trait :bounding_box, debug: false, scale: 0.5 
+  trait :bounding_box, debug: false, scale: 0.5
   traits :collision_detection, :velocity, :timer
 
   def setup

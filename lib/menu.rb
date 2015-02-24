@@ -22,12 +22,12 @@
 class CustomMenu < BasicGameObject
   include Chingu::Helpers::InputClient
   attr_accessor :menu_items, :visible
-  
+
   def initialize(options = {})
     super
-    
+
     @menu_items = options.delete(:menu_items)     # || {"Exit" => :exit}
-    @x = options.delete(:x) || $window.width/2
+    @x = options.delete(:x) || $window.width / 2
     @y = options.delete(:y) || 100
     @spacing = options.delete(:spacing) || 100
     @items = []
@@ -41,62 +41,62 @@ class CustomMenu < BasicGameObject
     y = @spacing + @y
     menu_items.each do |key, value|
       item = if key.is_a? String
-        Text.new(key, options.dup)
-      elsif key.is_a? Image
-        GameObject.new(options.merge!(:image => key))
-      elsif key.is_a? GameObject
-        menu_item.options.merge!(options.dup)
-        menu_item
+               Text.new(key, options.dup)
+             elsif key.is_a? Image
+               GameObject.new(options.merge!(image: key))
+             elsif key.is_a? GameObject
+               menu_item.options.merge!(options.dup)
+               menu_item
       end
-      
+
       item.options[:on_select] = method(:on_select)
       item.options[:on_deselect] = method(:on_deselect)
       item.options[:action] = value
-      
+
       item.rotation_center = :center_center
       item.x = @x
       item.y = y
       y += item.height + @spacing
       @items << item
-    end      
+    end
     @selected = options[:selected] || 0
     step(0)
-    
-    self.input = {:up => lambda{step(-1)}, :down => lambda{step(1)}, [:return, :space] => :select}
+
+    self.input = { :up => lambda { step(-1) }, :down => lambda { step(1) }, [:return, :space] => :select }
   end
-  
+
   def step(value)
     selected.options[:on_deselect].call(selected)
     @selected += value
-    @selected = @items.count-1  if @selected < 0
+    @selected = @items.count - 1  if @selected < 0
     @selected = 0               if @selected == @items.count
     selected.options[:on_select].call(selected)
   end
-  
+
   def select
-    dispatch_action(selected.options[:action], self.parent)
+    dispatch_action(selected.options[:action], parent)
   end
-          
+
   def selected
     @items[@selected]
   end
-    
+
   def on_deselect(object)
     object.color = @inactive_color
   end
-  
+
   def on_select(object)
     object.color = @active_color
   end
-  
+
   def draw
-    @items.each { |item| item.draw }
+    @items.each(&:draw)
   end
-  
+
   private
-  
+
   #
-  # TODO - DRY this up with input dispatcher somehow 
+  # TODO - DRY this up with input dispatcher somehow
   #
   def dispatch_action(action, object)
     case action
@@ -113,6 +113,5 @@ class CustomMenu < BasicGameObject
     else
       # TODO possibly raise an error? This ought to be handled when the input is specified in the first place.
     end
-  end    
+  end
 end
- 

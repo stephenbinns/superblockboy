@@ -3,7 +3,7 @@ class Coin < GameObject
   traits :collision_detection, :effect, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'items_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/items_16x16.png')
     @animations.frame_names = { coin: 4..7 }
     @animation = @animations[:coin]
 
@@ -35,7 +35,7 @@ class PowerUp < GameObject
   traits :collision_detection, :effect, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'items_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/items_16x16.png')
     @animations.frame_names = { power: 0..2 }
     @animation = @animations[:power]
 

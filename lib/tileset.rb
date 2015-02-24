@@ -22,7 +22,7 @@ class Tileset
         block = blocks[x].to_i
         b_x, b_y  = x * @block_width, y * @block_height
 
-        if [8, 10, 11, 16, 17, 19, 51, 52, 53, 54, 55, 56, 57].any? { |b| b == block }
+        if [8, 10, 11, 16, 17, 19, 51, 52, 53, 54, 55, 56, 57, 44].any? { |b| b == block }
           Background.create(x: b_x, y: b_y, image: @tileset[block])
         elsif [4, 5, 12, 45].any? { |b| b == block }
           Lava.create(x: b_x, y: b_y, image: @tileset[block])
@@ -32,18 +32,24 @@ class Tileset
           Door.create(x: b_x, y: b_y, image: @tileset[block])
         elsif block == 60
           @spawn = [b_x, b_y]
+          nil
         elsif block == 62
           Bouncer.create(x: b_x, y: b_y)
+          nil
         elsif block == 61
           Walker.create(x: b_x, y: b_y)
+          nil
         elsif block == 63
           Flyer.create(x: b_x, y: b_y)
+          nil
         elsif block == 64 || block == 65
-          ChangeDirectionTile.create(x: b_x, y: b_y, image: @tileset[9]) 
+          ChangeDirectionTile.create(x: b_x, y: b_y, image: @tileset[9])
         elsif block == 66
           Coin.create(x: b_x, y: b_y)
+          nil
         elsif block == 67
           PowerUp.create(x: b_x, y: b_y)
+          nil
         elsif [9, 18].any? { |b| b == block }
           # special case don't bother rendering a tile
           # the same color a background

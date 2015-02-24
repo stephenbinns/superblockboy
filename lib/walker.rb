@@ -43,7 +43,7 @@ class Flyer < Enemy
   traits :collision_detection, :velocity, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'enemies_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/enemies_16x16.png')
     @animations.frame_names = { fly: 8..10 }
 
     @animation = @animations[:fly]
@@ -102,7 +102,7 @@ class Walker < Enemy
   traits :collision_detection, :velocity, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'enemies_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/enemies_16x16.png')
     @animations.frame_names = { walk: 0..2 }
 
     @animation = @animations[:walk]
@@ -132,7 +132,7 @@ class Walker < Enemy
 
   def update
     @image = @animation.next
-    unless inside? 
+    unless inside?
       self.velocity_y = 0
       self.velocity_x = 0
       self.acceleration_y = 0
@@ -144,8 +144,7 @@ class Walker < Enemy
     check_collides_with_block
 
     next_tile = game_state.tiles.tile_at_object(self, @direction)
-
-    if next_tile && (next_tile.x + x == width / 2) || next_tile.instance_of?(Block) || next_tile.instance_of?(ChangeDirectionTile)
+    if next_tile.instance_of?(Block) || next_tile.instance_of?(ChangeDirectionTile)
       if @direction == :left
         set_direction :right
       else
@@ -160,7 +159,7 @@ class Bouncer < Enemy
   traits :collision_detection, :velocity, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'enemies_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/enemies_16x16.png')
     @animations.frame_names = { bouncer: 4..7 }
     @animation = @animations[:bouncer]
 

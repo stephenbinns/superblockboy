@@ -12,7 +12,7 @@ class BlockBoy < GameObject
       [:r] => :reset
     }
 
-    @animations = Chingu::Animation.new(file: 'player_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/player_16x16.png')
     @animations.frame_names = { none: 0..0, left: 4..6, right: 0..3 }
 
     @animation = @animations[:none]
@@ -27,6 +27,14 @@ class BlockBoy < GameObject
 
     update
     cache_bounding_box
+  end
+
+  def set_mode(mode)
+    if mode == :hardcore
+      @hardcore = true
+    elsif mode == :bloodlust
+      @bloodlust = true
+    end
   end
 
   def holding_left
@@ -113,11 +121,14 @@ class BlockBoy < GameObject
         self.y = tile.bb.top - 1
       end
 
-      set_spawn self.x, self.y
+      set_spawn self.x, self.y unless @hardcore
     end
 
     each_collision(Lava) do |_me, _lava|
       die
+
+      break if @hardcore
+
       if @direction == :right
         set_spawn @spawn_x - @speed, @spawn_y
       else
@@ -127,8 +138,13 @@ class BlockBoy < GameObject
     end
 
     each_collision(Door) do | _, _ |
-      game_state.next_level
-      @can_fire = false
+      if @bloodlust# && Enemy.all_enemies.count > 0
+        game_state.notify 'There are enemies to kill'
+      else
+        game_state.next_level
+        @can_fire = false
+        game_state.notify 'Level complete'
+      end
     end
 
     each_collision(Coin) do | _, coin |
@@ -138,10 +154,11 @@ class BlockBoy < GameObject
     each_collision(PowerUp) do | _, item |
       item.die
       @can_fire = true
+      game_state.notify 'Press Z to fire'
     end
 
     each_collision(Enemy.all_enemies) do |_me, _enemy|
-      if self.bb.bottom < _enemy.bb.bottom
+      if bb.bottom < _enemy.bb.bottom
         _enemy.die
         self.velocity_y = -4
       else
@@ -149,7 +166,6 @@ class BlockBoy < GameObject
       end
       break
     end
-
 
     each_collision(JumpPad) do | _, tile |
       if velocity_y < 0

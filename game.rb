@@ -1,10 +1,17 @@
 #!/usr/bin/env ruby
 require 'chingu'
-# $LOAD_PATH.unshift File.join(File.expand_path(__FILE__), "..", "..", "lib")
 include Gosu
 include Chingu
 
-Dir.glob('lib/**/*.rb') { |f| require_relative f }
+require_relative 'lib/block_boy'
+require_relative 'lib/block'
+require_relative 'lib/fireball'
+require_relative 'lib/items'
+require_relative 'lib/menu'
+require_relative 'lib/Music'
+require_relative 'lib/notify'
+require_relative 'lib/tileset'
+require_relative 'lib/walker'
 
 class Game < Chingu::Window
   def initialize
@@ -20,9 +27,9 @@ end
 class Intro < GameState
   trait :timer
   def setup
-    self.input = { :space => MainMenu }
-    @text = Text.create(:y => 200, :x => $window.width/2, :font => 'media/digiffiti.ttf', :size => 48, :text => 'Handmadebymogwai')
-    @text.x -= @text.width / 2.2 
+    self.input = { space: MainMenu }
+    @text = Text.create(y: 200, x: $window.width / 2, font: 'media/digiffiti.ttf', size: 48, text: 'Handmadebymogwai')
+    @text.x -= @text.width / 2.2
 
     after(1000) { switch_game_state MainMenu }
   end
@@ -31,44 +38,49 @@ end
 class MainMenu < GameState
   def initialize
     super
+    centered_text 'SUPER', 50, Color.new(0xff0e4612), 80
+    centered_text 'SUPER', 54, Color.new(0xff3c733f), 80
 
-    centered_text 'SUPER', 50, Color.new(0xff306230), 80
-    centered_text 'SUPER', 54, Color.new(0xff0F380F), 80
+    centered_text 'BlockBoy', 120, Color.new(0xff0e4612)
+    centered_text 'BlockBoy', 124, Color.new(0xff3c733f)
 
-    centered_text 'BlockBoy', 120, Color.new(0xff306230)
-    centered_text 'BlockBoy', 124, Color.new(0xff0F380F)
+    centered_text '---------', 180, Color.new(0xff0e4612), 28
+    centered_text '---------', 184, Color.new(0xff3c733f), 28
 
-    centered_text '---------', 180, Color.new(0xff306230), 28
-    centered_text '---------', 184, Color.new(0xff0F380F), 28
-
-    @menu = CustomMenu.new({
-      :menu_items => [
-        ['Easy', PlayState ],
-        ['Hardcore', PlayState ],
-        ['Bloodlust', PlayState ],
+    @menu = CustomMenu.new(
+      menu_items: [
+        ['Easy', PlayState],
+        ['Hardcore', lambda { 
+          state = PlayState.new(:mode => :hardcore)
+          switch_game_state state
+        }],
+        ['Bloodlust', lambda { 
+          state = PlayState.new(:mode => :bloodlust)
+          switch_game_state state
+        }],
         ['Exit', lambda { exit }]
       ],
-      :font => 'media/bubble.ttf',
-      :size => 28,
-      :spacing => 25,
-      :selected_color => Color.new(0xff306230),
-      :unselected_color => Color.new(0xff0F380F),
-      :y => 200
-    })
+      font: 'media/bubble.ttf',
+      size: 28,
+      spacing: 25,
+      selected_color: Color.new(0xff0e4612),
+      unselected_color: Color.new(0xff3c733f),
+      y: 200
+    )
 
-    centered_text '---------', 395, Color.new(0xff306230), 28
-    centered_text '---------', 399, Color.new(0xff0F380F), 28
+    centered_text '---------', 395, Color.new(0xff0e4612), 28
+    centered_text '---------', 399, Color.new(0xff3c733f), 28
   end
 
-  def centered_text(string, y, color, size=56)
+  def centered_text(string, y, color, size = 56)
     text = Text.create(
-      :y => y,
-      :x => $window.width/2,
-      :font => 'media/bubble.ttf',
-      :size => size,
-      :color => color,
-      :text => string)
-    text.x -= text.image.width / 2 
+      y: y,
+      x: $window.width / 2,
+      font: 'media/bubble.ttf',
+      size: size,
+      color: color,
+      text: string)
+    text.x -= text.image.width / 2
   end
 
   def draw
@@ -101,7 +113,12 @@ class PlayState < GameState
     @level = 1
 
     @player = BlockBoy.create(x: 0, y: 0)
+    set_mode options[:mode]
     load_level @level
+  end
+
+  def set_mode(mode)
+    @player.set_mode mode
   end
 
   def next_level
@@ -135,14 +152,30 @@ class PlayState < GameState
     @player.y = @tiles.spawn[1]
   end
 
+  def notify(text)
+    @notify = Notify.new text
+  end
+
   def draw
     fill(Color.new 0xffaac50e) # weird rendering bug this isn't actually the colour used!
     super
+
+    if @notify
+      @notify.draw
+    end
   end
 
   def update
     super
     viewport.center_around(@player)
+
+    if @notify
+      @notify.update
+      if @notify.dead?
+        @notify.destroy
+        @notify = nil
+      end
+    end
   end
 end
 
