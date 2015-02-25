@@ -20,13 +20,12 @@ class Coin < GameObject
   end
 
   def draw
-    #if game_state.viewport.inside? self
+    if game_state.viewport.inside? self
       super
-    #end
+    end
   end
 
   def update
-    #return unless game_state.viewport.inside? self
     @image = @animation.next
   end
 end

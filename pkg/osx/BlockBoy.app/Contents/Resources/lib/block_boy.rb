@@ -82,7 +82,9 @@ class BlockBoy < GameObject
     return unless collidable
 
     self.x += x
-    each_collision(Block) do |_me, _stone_wall|
+
+    tiles = game_state.tiles.tiles_around_object(self)
+    each_collision(tiles) do |_me, _stone_wall|
       self.x = previous_x
       break
     end
@@ -111,17 +113,7 @@ class BlockBoy < GameObject
 
     tiles = game_state.tiles.tiles_around_object(self)
     each_bounding_box_collision(tiles) do | _me, tile |
-      if tile.instance_of? JumpPad
-        if velocity_y < 0
-          self.y = tile.bb.bottom + image.height * factor_y
-          self.velocity_y = 0
-        else
-          @jumping = false
-          self.velocity_y = -20
-          self.y = tile.bb.top - 1
-        end
-        break
-      end
+      break if tile.instance_of? JumpPad
 
       if velocity_y < 0  # Hitting the ceiling
         self.y = tile.bb.bottom + image.height * factor_y
@@ -132,7 +124,6 @@ class BlockBoy < GameObject
       end
 
       set_spawn self.x, self.y unless @hardcore
-      break
     end
 
     each_bounding_box_collision(Lava) do |_me, _lava|
@@ -176,6 +167,17 @@ class BlockBoy < GameObject
         die
       end
       break
+    end
+
+    each_bounding_box_collision(JumpPad) do | _, tile |
+      if velocity_y < 0
+        self.y = tile.bb.bottom + image.height * factor_y
+        self.velocity_y = 0
+      else
+        @jumping = false
+        self.velocity_y = -20
+        self.y = tile.bb.top - 1
+      end
     end
 
     unless game_state.viewport.inside_game_area? self

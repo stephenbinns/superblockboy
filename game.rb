@@ -150,19 +150,20 @@ class PlayState < GameState
 
     @player.x = @tiles.spawn[0]
     @player.y = @tiles.spawn[1]
+    @player.set_spawn @player.x, @player.y
   end
 
   def notify(text)
-    @notify = Notify.new text
+    @notify.destroy if @notify
+    x = viewport.game_area.x + $window.width / 2
+    y = viewport.game_area.y + $window.height / 2 
+    puts "#{x} #{y}"
+    @notify = Notify.new text, x, y
   end
 
   def draw
     fill(Color.new 0xffaac50e) # weird rendering bug this isn't actually the colour used!
     super
-
-    if @notify
-      @notify.draw
-    end
   end
 
   def update

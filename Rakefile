@@ -20,7 +20,8 @@ task :build_standalone do
   # copy all media
   cp_r Dir.glob('media/*.*'), 'pkg/osx/Ruby.app/Contents/Resources/media/'
 
-  # take the system ruby
+  # take the system ruby for speed reasons
+  # todo: this probably won't work on non 10.10 osx
   cp '/System/Library/Frameworks/Ruby.framework/Versions/2.0/usr/lib/libruby.2.0.0.dylib', 'pkg/osx/Ruby.app/Contents/Frameworks'
 
   cd 'pkg/osx/Ruby.app/Contents/Resources/'

@@ -56,33 +56,36 @@ class Tileset
         else
           Block.create(x: b_x, y: b_y, image: @tileset[block])
         end
-      end.freeze
-    end.freeze
+      end
+    end
   end
 
   def tile_at_object(object, direction = :center)
-    ox, oy = object.bb.midbottom[0], object.bb.midbottom[1]
+    if object.respond_to? :bb
+      ox, oy = object.bb.midbottom[0], object.bb.midbottom[1]
 
-    if direction == :left
-      ox -= @block_width
-    elsif direction == :right
-      ox += @block_width
-    elsif direction == :below
-      oy += @block_height
-    elsif direction == :above
-      oy -= @block_height
+      if direction == :left
+        ox -= @block_width
+      elsif direction == :right
+        ox += @block_width
+      elsif direction == :below
+        oy += @block_height
+      elsif direction == :above
+        oy -= @block_height
+      end
+
+      tile_at(ox, oy)
+    else
+      fail 'Object does not respond to bb'
     end
-
-    tile_at(ox, oy)
   end
 
   def tiles_around_object(object)
-    ox, oy = object.bb.midbottom[0], object.bb.midbottom[1]
     [
-      tile_at(ox, oy),
-      tile_at(ox, oy + @block_height),
-      tile_at(ox, oy - @block_height)
-    ].select { |f| f && f.solid }
+      tile_at_object(object, :center),
+      tile_at_object(object, :above),
+      tile_at_object(object, :below)
+    ].select { |f| f.instance_of?(Block) || f.instance_of?(JumpPad) }
   end
 
   def tile_at(x, y)

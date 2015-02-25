@@ -82,7 +82,9 @@ class BlockBoy < GameObject
     return unless collidable
 
     self.x += x
-    each_collision(Block) do |_me, _stone_wall|
+
+    tiles = game_state.tiles.tiles_around_object(self)
+    each_collision(tiles) do |_me, _stone_wall|
       self.x = previous_x
       break
     end
@@ -110,7 +112,7 @@ class BlockBoy < GameObject
     return unless game_state.tiles
 
     tiles = game_state.tiles.tiles_around_object(self)
-    each_collision(tiles) do | _me, tile |
+    each_bounding_box_collision(tiles) do | _me, tile |
       break if tile.instance_of? JumpPad
 
       if velocity_y < 0  # Hitting the ceiling
@@ -124,7 +126,7 @@ class BlockBoy < GameObject
       set_spawn self.x, self.y unless @hardcore
     end
 
-    each_collision(Lava) do |_me, _lava|
+    each_bounding_box_collision(Lava) do |_me, _lava|
       die
 
       break if @hardcore
@@ -137,8 +139,8 @@ class BlockBoy < GameObject
       break
     end
 
-    each_collision(Door) do | _, _ |
-      if @bloodlust# && Enemy.all_enemies.count > 0
+    each_bounding_box_collision(Door) do | _, _ |
+      if @bloodlust && Enemy.all_enemies.count > 0
         game_state.notify 'There are enemies to kill'
       else
         game_state.next_level
@@ -147,17 +149,17 @@ class BlockBoy < GameObject
       end
     end
 
-    each_collision(Coin) do | _, coin |
+    each_bounding_box_collision(Coin) do | _, coin |
       coin.die
     end
 
-    each_collision(PowerUp) do | _, item |
+    each_bounding_box_collision(PowerUp) do | _, item |
       item.die
       @can_fire = true
-      game_state.notify 'Press Z to fire'
+      game_state.notify 'Press X to fire'
     end
 
-    each_collision(Enemy.all_enemies) do |_me, _enemy|
+    each_bounding_box_collision(Enemy.all_enemies) do |_me, _enemy|
       if bb.bottom < _enemy.bb.bottom
         _enemy.die
         self.velocity_y = -4
@@ -167,7 +169,7 @@ class BlockBoy < GameObject
       break
     end
 
-    each_collision(JumpPad) do | _, tile |
+    each_bounding_box_collision(JumpPad) do | _, tile |
       if velocity_y < 0
         self.y = tile.bb.bottom + image.height * factor_y
         self.velocity_y = 0

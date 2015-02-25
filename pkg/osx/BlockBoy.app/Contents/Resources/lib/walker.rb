@@ -2,7 +2,7 @@ class Enemy < GameObject
   trait :effect
   def check_collides_with_block
     tiles = game_state.tiles.tiles_around_object(self)
-    each_collision(tiles) do | _me, tile |
+    each_bounding_box_collision(tiles) do | _me, tile |
       self.y = tile.bb.top - 1
     end
   end
