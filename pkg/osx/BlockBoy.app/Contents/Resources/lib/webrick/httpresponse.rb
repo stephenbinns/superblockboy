@@ -47,8 +47,7 @@ module WEBrick
     attr_accessor :reason_phrase
 
     ##
-    # Body may be a String or IO-like object that responds to #read and
-    # #readpartial.
+    # Body may be a String or IO subclass.
 
     attr_accessor :body
 
@@ -171,7 +170,7 @@ module WEBrick
     end
 
     ##
-    # Iterates over each header in the response
+    # Iterates over each header in the resopnse
 
     def each
       @header.each{|field, value|  yield(field, value) }
@@ -300,10 +299,9 @@ module WEBrick
     # Sends the body on +socket+
 
     def send_body(socket) # :nodoc:
-      if @body.respond_to? :readpartial then
-        send_body_io(socket)
-      else
-        send_body_string(socket)
+      case @body
+      when IO then send_body_io(socket)
+      else send_body_string(socket)
       end
     end
 

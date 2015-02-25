@@ -30,7 +30,7 @@ module Newton
   include Jacobian
   module_function
 
-  def norm(fv,zero=0.0) # :nodoc:
+  def norm(fv,zero=0.0)
     s = zero
     n = fv.size
     for i in 0...n do
@@ -39,7 +39,6 @@ module Newton
     s
   end
 
-  # See also Newton
   def nlsolve(f,x)
     nRetry = 0
     n = x.size

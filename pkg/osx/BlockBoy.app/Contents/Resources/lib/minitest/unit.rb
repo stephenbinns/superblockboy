@@ -5,8 +5,10 @@
 # File a patch instead and assign it to Ryan Davis.
 ######################################################################
 
-require "optparse"
-require "rbconfig"
+require 'optparse'
+require 'rbconfig'
+require 'thread' # required for 1.8
+require 'minitest/parallel_each'
 
 ##
 # Minimal (mostly drop-in) replacement for test-unit.
@@ -38,9 +40,6 @@ module MiniTest
   class Skip < Assertion; end
 
   class << self
-    ##
-    # Filter object for backtraces.
-
     attr_accessor :backtrace_filter
   end
 
@@ -88,17 +87,16 @@ module MiniTest
     # figure out what diff to use.
 
     def self.diff
-      @diff = if (RbConfig::CONFIG['host_os'] =~ /mswin|mingw/ &&
-                  system("diff.exe", __FILE__, __FILE__)) then
+      @diff = if RbConfig::CONFIG['host_os'] =~ /mswin|mingw/ then
                 "diff.exe -u"
-              elsif Minitest::Unit::Guard.maglev? then # HACK
-                "diff -u"
-              elsif system("gdiff", __FILE__, __FILE__)
-                "gdiff -u" # solaris and kin suck
-              elsif system("diff", __FILE__, __FILE__)
-                "diff -u"
               else
-                nil
+                if system("gdiff", __FILE__, __FILE__)
+                  "gdiff -u" # solaris and kin suck
+                elsif system("diff", __FILE__, __FILE__)
+                  "diff -u"
+                else
+                  nil
+                end
               end unless defined? @diff
 
       @diff
@@ -179,8 +177,8 @@ module MiniTest
     # newlines and makes hex-values generic (like object_ids). This
     # uses mu_pp to do the first pass and then cleans it up.
 
-    def mu_pp_for_diff obj
-      mu_pp(obj).gsub(/\\n/, "\n").gsub(/:0x[a-fA-F0-9]{4,}/m, ':0xXXXXXX')
+    def mu_pp_for_diff obj # TODO: possibly rename
+      mu_pp(obj).gsub(/\\n/, "\n").gsub(/0x[a-f0-9]+/m, '0xXXXXXX')
     end
 
     def _assertions= n # :nodoc:
@@ -202,6 +200,18 @@ module MiniTest
         raise MiniTest::Assertion, msg
       end
       true
+    end
+
+    ##
+    # Fails unless the block returns a true value.
+    #
+    # NOTE: This method is deprecated, use assert. It will be removed
+    # on 2013-01-01."
+
+    def assert_block msg = nil
+      warn "NOTE: MiniTest::Unit::TestCase#assert_block is deprecated, use assert. It will be removed on 2013-01-01. Called from #{caller.first}"
+      msg = message(msg) { "Expected block to return true value" }
+      assert yield, msg
     end
 
     ##
@@ -227,7 +237,7 @@ module MiniTest
 
     def assert_equal exp, act, msg = nil
       msg = message(msg, "") { diff exp, act }
-      assert exp == act, msg
+      assert(exp == act, msg)
     end
 
     ##
@@ -238,9 +248,7 @@ module MiniTest
 
     def assert_in_delta exp, act, delta = 0.001, msg = nil
       n = (exp - act).abs
-      msg = message(msg) {
-        "Expected |#{exp} - #{act}| (#{n}) to be <= #{delta}"
-      }
+      msg = message(msg) { "Expected |#{exp} - #{act}| (#{n}) to be < #{delta}"}
       assert delta >= n, msg
     end
 
@@ -554,7 +562,6 @@ module MiniTest
 
     def message msg = nil, ending = ".", &default
       proc {
-        msg = msg.call.chomp(".") if Proc === msg
         custom_message = "#{msg}.\n" unless msg.nil? or msg.to_s.empty?
         "#{custom_message}#{default.call}#{ending}"
       }
@@ -604,9 +611,9 @@ module MiniTest
     def refute_in_delta exp, act, delta = 0.001, msg = nil
       n = (exp - act).abs
       msg = message(msg) {
-        "Expected |#{exp} - #{act}| (#{n}) to not be <= #{delta}"
+        "Expected |#{exp} - #{act}| (#{n}) to not be < #{delta}"
       }
-      refute delta >= n, msg
+      refute delta > n, msg
     end
 
     ##
@@ -716,15 +723,7 @@ module MiniTest
 
     def skip msg = nil, bt = caller
       msg ||= "Skipped, no message given"
-      @skip = true
       raise MiniTest::Skip, msg, bt
-    end
-
-    ##
-    # Was this testcase skipped? Meant for #teardown.
-
-    def skipped?
-      defined?(@skip) and @skip
     end
 
     ##
@@ -738,26 +737,14 @@ module MiniTest
   end
 
   class Unit # :nodoc:
-    VERSION = "4.7.5" # :nodoc:
+    VERSION = "4.3.2" # :nodoc:
 
     attr_accessor :report, :failures, :errors, :skips # :nodoc:
-    attr_accessor :assertion_count                    # :nodoc:
-    attr_writer   :test_count                         # :nodoc:
+    attr_accessor :test_count, :assertion_count       # :nodoc:
     attr_accessor :start_time                         # :nodoc:
     attr_accessor :help                               # :nodoc:
     attr_accessor :verbose                            # :nodoc:
     attr_writer   :options                            # :nodoc:
-
-    ##
-    # :attr:
-    #
-    # if true, installs an "INFO" signal handler (only available to BSD and
-    # OS X users) which prints diagnostic information about the test run.
-    #
-    # This is auto-detected by default but may be overridden by custom
-    # runners.
-
-    attr_accessor :info_signal
 
     ##
     # Lazy accessor for options.
@@ -860,10 +847,6 @@ module MiniTest
       output.print(*a)
     end
 
-    def test_count # :nodoc:
-      @test_count ||= 0
-    end
-
     ##
     # Runner for a given +type+ (eg, test vs bench).
 
@@ -905,13 +888,15 @@ module MiniTest
     end
 
     ##
-    # Runs all the +suites+ for a given +type+.
-    #
-    # NOTE: this method is redefined in parallel_each.rb, which is
-    # loaded if a test-suite calls parallelize_me!.
+    # Runs all the +suites+ for a given +type+. Runs suites declaring
+    # a test_order of +:parallel+ in parallel, and everything else
+    # serial.
 
     def _run_suites suites, type
-      suites.map { |suite| _run_suite suite, type }
+      parallel, serial = suites.partition { |s| s.test_order == :parallel }
+
+      ParallelEach.new(parallel).map { |suite| _run_suite suite, type } +
+        serial.map { |suite| _run_suite suite, type }
     end
 
     ##
@@ -924,13 +909,7 @@ module MiniTest
       filter = options[:filter] || '/./'
       filter = Regexp.new $1 if filter =~ /\/(.*)\//
 
-      all_test_methods = suite.send "#{type}_methods"
-
-      filtered_test_methods = all_test_methods.find_all { |m|
-        filter === m || filter === "#{suite}##{m}"
-      }
-
-      assertions = filtered_test_methods.map { |method|
+      assertions = suite.send("#{type}_methods").grep(filter).map { |method|
         inst = suite.new method
         inst._assertions = 0
 
@@ -950,7 +929,7 @@ module MiniTest
     end
 
     ##
-    # Record the result of a single test. Makes it very easy to gather
+    # Record the result of a single run. Makes it very easy to gather
     # information. Eg:
     #
     #   class StatisticsRecorder < MiniTest::Unit
@@ -960,11 +939,6 @@ module MiniTest
     #   end
     #
     #   MiniTest::Unit.runner = StatisticsRecorder.new
-    #
-    # NOTE: record might be sent more than once per test.  It will be
-    # sent once with the results from the test itself.  If there is a
-    # failure or error in teardown, it will be sent again with the
-    # error or failure.
 
     def record suite, method, assertions, time, error
     end
@@ -987,14 +961,14 @@ module MiniTest
           when MiniTest::Skip then
             @skips += 1
             return "S" unless @verbose
-            "Skipped:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+            "Skipped:\n#{meth}(#{klass}) [#{location e}]:\n#{e.message}\n"
           when MiniTest::Assertion then
             @failures += 1
-            "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+            "Failure:\n#{meth}(#{klass}) [#{location e}]:\n#{e.message}\n"
           else
             @errors += 1
             bt = MiniTest::filter_backtrace(e.backtrace).join "\n    "
-            "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message}\n    #{bt}\n"
+            "Error:\n#{meth}(#{klass}):\n#{e.class}: #{e.message}\n    #{bt}\n"
           end
       @report << e
       e[0, 1]
@@ -1004,16 +978,11 @@ module MiniTest
       @report = []
       @errors = @failures = @skips = 0
       @verbose = false
-      @mutex = defined?(Mutex) ? Mutex.new : nil
-      @info_signal = Signal.list['INFO']
+      @mutex = Mutex.new
     end
 
     def synchronize # :nodoc:
-      if @mutex then
-        @mutex.synchronize { yield }
-      else
-        yield
-      end
+      @mutex.synchronize { yield }
     end
 
     def process_args args = [] # :nodoc:
@@ -1070,8 +1039,7 @@ module MiniTest
     # Top level driver, controls all output and filtering.
 
     def _run args = []
-      args = process_args args # ARGH!! blame test/unit process_args
-      self.options.merge! args
+      self.options = process_args args
 
       puts "Run options: #{help}"
 
@@ -1080,7 +1048,7 @@ module MiniTest
         break unless report.empty?
       end
 
-      return failures + errors if self.test_count > 0 # or return nil...
+      return failures + errors if @test_count > 0 # or return nil...
     rescue Interrupt
       abort 'Interrupted'
     end
@@ -1123,15 +1091,6 @@ module MiniTest
       def jruby? platform = RUBY_PLATFORM
         "java" == platform
       end
-
-      ##
-      # Is this running on mri?
-
-      def maglev? platform = defined?(RUBY_ENGINE) && RUBY_ENGINE
-        "maglev" == platform
-      end
-
-      module_function :maglev?
 
       ##
       # Is this running on mri?
@@ -1224,6 +1183,79 @@ module MiniTest
       def after_teardown; end
     end
 
+    module Deprecated # :nodoc:
+
+      ##
+      # This entire module is deprecated and slated for removal on 2013-01-01.
+
+      module Hooks
+        def run_setup_hooks # :nodoc:
+          _run_hooks self.class.setup_hooks
+        end
+
+        def _run_hooks hooks # :nodoc:
+          hooks.each do |hook|
+            if hook.respond_to?(:arity) && hook.arity == 1
+              hook.call(self)
+            else
+              hook.call
+            end
+          end
+        end
+
+        def run_teardown_hooks # :nodoc:
+          _run_hooks self.class.teardown_hooks.reverse
+        end
+      end
+
+      ##
+      # This entire module is deprecated and slated for removal on 2013-01-01.
+
+      module HooksCM
+        ##
+        # Adds a block of code that will be executed before every
+        # TestCase is run.
+        #
+        # NOTE: This method is deprecated, use before/after_setup. It
+        # will be removed on 2013-01-01.
+
+        def add_setup_hook arg=nil, &block
+          warn "NOTE: MiniTest::Unit::TestCase.add_setup_hook is deprecated, use before/after_setup via a module (and call super!). It will be removed on 2013-01-01. Called from #{caller.first}"
+          hook = arg || block
+          @setup_hooks << hook
+        end
+
+        def setup_hooks # :nodoc:
+          if superclass.respond_to? :setup_hooks then
+            superclass.setup_hooks
+          else
+            []
+          end + @setup_hooks
+        end
+
+        ##
+        # Adds a block of code that will be executed after every
+        # TestCase is run.
+        #
+        # NOTE: This method is deprecated, use before/after_teardown. It
+        # will be removed on 2013-01-01.
+
+        def add_teardown_hook arg=nil, &block
+          warn "NOTE: MiniTest::Unit::TestCase#add_teardown_hook is deprecated, use before/after_teardown. It will be removed on 2013-01-01. Called from #{caller.first}"
+          hook = arg || block
+          @teardown_hooks << hook
+        end
+
+        def teardown_hooks # :nodoc:
+          if superclass.respond_to? :teardown_hooks then
+            superclass.teardown_hooks
+          else
+            []
+          end + @teardown_hooks
+        end
+      end
+    end
+
     ##
     # Subclass TestCase to create your own tests. Typically you'll want a
     # TestCase subclass per implementation class.
@@ -1232,6 +1264,8 @@ module MiniTest
 
     class TestCase
       include LifecycleHooks
+      include Deprecated::Hooks
+      extend  Deprecated::HooksCM # UGH... I can't wait 'til 2013!
       include Guard
       extend Guard
 
@@ -1239,6 +1273,8 @@ module MiniTest
 
       PASSTHROUGH_EXCEPTIONS = [NoMemoryError, SignalException,
                                 Interrupt, SystemExit] # :nodoc:
+
+      SUPPORTS_INFO_SIGNAL = Signal.list['INFO'] # :nodoc:
 
       ##
       # Runs the tests reporting the status to +runner+
@@ -1252,7 +1288,7 @@ module MiniTest
           time = runner.start_time ? Time.now - runner.start_time : 0
           warn "Current Test: %s#%s %.2fs" % [self.class, self.__name__, time]
           runner.status $stderr
-        end if runner.info_signal
+        end if SUPPORTS_INFO_SIGNAL
 
         start_time = Time.now
 
@@ -1270,7 +1306,7 @@ module MiniTest
         rescue *PASSTHROUGH_EXCEPTIONS
           raise
         rescue Exception => e
-          @passed = Skip === e
+          @passed = false
           time = Time.now - start_time
           runner.record self.class, self.__name__, self._assertions, time, e
           result = runner.puke self.class, self.__name__, e
@@ -1282,11 +1318,10 @@ module MiniTest
               raise
             rescue Exception => e
               @passed = false
-              runner.record self.class, self.__name__, self._assertions, time, e
               result = runner.puke self.class, self.__name__, e
             end
           end
-          trap 'INFO', 'DEFAULT' if runner.info_signal
+          trap 'INFO', 'DEFAULT' if SUPPORTS_INFO_SIGNAL
         end
         result
       end
@@ -1297,11 +1332,11 @@ module MiniTest
         @__name__ = name
         @__io__ = nil
         @passed = nil
-        @@current = self # FIX: make thread local
+        @@current = self
       end
 
       def self.current # :nodoc:
-        @@current # FIX: make thread local
+        @@current
       end
 
       ##
@@ -1357,8 +1392,6 @@ module MiniTest
       # and your tests are awesome.
 
       def self.parallelize_me!
-        require "minitest/parallel_each"
-
         class << self
           undef_method :test_order if method_defined? :test_order
           define_method :test_order do :parallel end
@@ -1367,6 +1400,7 @@ module MiniTest
 
       def self.inherited klass # :nodoc:
         @@test_suites[klass] = true
+        klass.reset_setup_teardown_hooks
         super
       end
 
@@ -1414,9 +1448,30 @@ module MiniTest
 
       def teardown; end
 
+      def self.reset_setup_teardown_hooks # :nodoc:
+        # also deprecated... believe it.
+        @setup_hooks = []
+        @teardown_hooks = []
+      end
+
+      reset_setup_teardown_hooks
+
       include MiniTest::Assertions
     end # class TestCase
   end # class Unit
 end # module MiniTest
 
 Minitest = MiniTest # :nodoc: because ugh... I typo this all the time
+
+if $DEBUG then
+  module Test                # :nodoc:
+    module Unit              # :nodoc:
+      class TestCase         # :nodoc:
+        def self.inherited x # :nodoc:
+          # this helps me ferret out porting issues
+          raise "Using minitest and test/unit in the same process: #{x}"
+        end
+      end
+    end
+  end
+end

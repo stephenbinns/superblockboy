@@ -57,9 +57,7 @@ class Net::HTTPMultiStatus < Net::HTTPSuccess                   # 207 - RFC 4918
   HAS_BODY = true
 end
 # 208 Already Reported - RFC 5842; experimental
-class Net::HTTPIMUsed < Net::HTTPSuccess                        # 226 - RFC 3229
-  HAS_BODY = true
-end
+# 226 IM Used - RFC 3229; no famous implementation known
 
 class Net::HTTPMultipleChoices < Net::HTTPRedirection    # 300
   HAS_BODY = true
@@ -220,7 +218,6 @@ class Net::HTTPResponse
     '205' => Net::HTTPResetContent,
     '206' => Net::HTTPPartialContent,
     '207' => Net::HTTPMultiStatus,
-    '226' => Net::HTTPIMUsed,
 
     '300' => Net::HTTPMultipleChoices,
     '301' => Net::HTTPMovedPermanently,

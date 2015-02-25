@@ -1,5 +1,5 @@
 ##
-# The YAML module is an alias of Psych, the YAML engine for Ruby.
+# The YAML module is an alias of Psych, the YAML engine for ruby.
 
 begin
   require 'psych'
@@ -10,7 +10,7 @@ rescue LoadError
   raise
 end
 
-YAML = Psych # :nodoc:
+YAML = Psych
 
 module Psych # :nodoc:
   # For compatibility, deprecated

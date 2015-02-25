@@ -5,7 +5,8 @@
 # File a patch instead and assign it to Ryan Davis.
 ######################################################################
 
-class MockExpectationError < StandardError; end # :nodoc:
+class MockExpectationError < StandardError # :nodoc:
+end # omg... worst bug ever. rdoc doesn't allow 1-liners
 
 ##
 # A simple and clean mock object framework.
@@ -158,8 +159,7 @@ class Object # :nodoc:
   # Add a temporary stubbed method replacing +name+ for the duration
   # of the +block+. If +val_or_callable+ responds to #call, then it
   # returns the result of calling it, otherwise returns the value
-  # as-is. Cleans up the stub at the end of the +block+. The method
-  # +name+ must exist before stubbing.
+  # as-is. Cleans up the stub at the end of the +block+.
   #
   #     def test_stale_eh
   #       obj_under_test = Something.new

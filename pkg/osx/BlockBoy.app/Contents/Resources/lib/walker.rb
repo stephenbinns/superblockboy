@@ -14,8 +14,18 @@ class Enemy < GameObject
     out.concat Flyer.all
   end
 
+  def visible?
+    game_state.viewport.inside? self 
+  end
+
   def draw
-    if game_state.viewport.inside? self
+    if visible?
+      super
+    end
+  end
+
+  def update
+    if visible?
       super
     end
   end
@@ -43,7 +53,7 @@ class Flyer < Enemy
   traits :collision_detection, :velocity, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'enemies_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/enemies_16x16.png')
     @animations.frame_names = { fly: 8..10 }
 
     @animation = @animations[:fly]
@@ -102,7 +112,7 @@ class Walker < Enemy
   traits :collision_detection, :velocity, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'enemies_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/enemies_16x16.png')
     @animations.frame_names = { walk: 0..2 }
 
     @animation = @animations[:walk]
@@ -136,6 +146,7 @@ class Walker < Enemy
       self.velocity_y = 0
       self.velocity_x = 0
       self.acceleration_y = 0
+      return
     else
       self.acceleration_y = 0.5
       set_direction :left if velocity_x == 0
@@ -159,7 +170,7 @@ class Bouncer < Enemy
   traits :collision_detection, :velocity, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'enemies_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/enemies_16x16.png')
     @animations.frame_names = { bouncer: 4..7 }
     @animation = @animations[:bouncer]
 

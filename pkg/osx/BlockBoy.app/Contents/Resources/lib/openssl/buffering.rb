@@ -1,27 +1,23 @@
-# coding: binary
-#--
-#= $RCSfile$ -- Buffering mix-in module.
-#
-#= Info
-#  'OpenSSL for Ruby 2' project
-#  Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
-#  All rights reserved.
-#
-#= Licence
-#  This program is licenced under the same licence as Ruby.
-#  (See the file 'LICENCE'.)
-#
-#= Version
-#  $Id: buffering.rb 43964 2013-12-03 01:44:41Z drbrain $
-#++
+=begin
+= $RCSfile$ -- Buffering mix-in module.
+
+= Info
+  'OpenSSL for Ruby 2' project
+  Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
+  All rights reserved.
+
+= Licence
+  This program is licenced under the same licence as Ruby.
+  (See the file 'LICENCE'.)
+
+= Version
+  $Id: buffering.rb 33485 2011-10-19 20:05:21Z emboss $
+=end
 
 ##
 # OpenSSL IO buffering mix-in module.
 #
 # This module allows an OpenSSL::SSL::SSLSocket to behave like an IO.
-#
-# You typically won't use this module directly, you can see it implemented in
-# OpenSSL::SSL::SSLSocket.
 
 module OpenSSL::Buffering
   include Enumerable
@@ -38,11 +34,7 @@ module OpenSSL::Buffering
 
   BLOCK_SIZE = 1024*16
 
-  ##
-  # Creates an instance of OpenSSL's buffering IO module.
-
-  def initialize(*)
-    super
+  def initialize(*args)
     @eof = false
     @rbuffer = ""
     @sync = @io.sync
@@ -169,7 +161,7 @@ module OpenSSL::Buffering
   # when the peer requests a new TLS/SSL handshake.  See openssl the FAQ for
   # more details.  http://www.openssl.org/support/faq.html
 
-  def read_nonblock(maxlen, buf=nil, exception: true)
+  def read_nonblock(maxlen, buf=nil)
     if maxlen == 0
       if buf
         buf.clear
@@ -179,7 +171,7 @@ module OpenSSL::Buffering
       end
     end
     if @rbuffer.empty?
-      return sysread_nonblock(maxlen, buf, exception: exception)
+      return sysread_nonblock(maxlen, buf)
     end
     ret = consume_rbuff(maxlen)
     if buf
@@ -378,9 +370,9 @@ module OpenSSL::Buffering
   # is when the peer requests a new TLS/SSL handshake.  See the openssl FAQ
   # for more details.  http://www.openssl.org/support/faq.html
 
-  def write_nonblock(s, exception: true)
+  def write_nonblock(s)
     flush
-    syswrite_nonblock(s, exception: exception)
+    syswrite_nonblock(s)
   end
 
   ##

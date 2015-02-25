@@ -31,15 +31,6 @@ module JSON
           object
         end
       end
-
-      def load(source, proc = nil, opts = {})
-        result = ::JSON.load(source, proc, opts.merge(:object_class => self))
-        result.nil? ? new : result
-      end
-
-      def dump(obj, *args)
-        ::JSON.dump(obj, *args)
-      end
     end
     self.json_creatable = false
 

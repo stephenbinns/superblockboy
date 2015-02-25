@@ -14,7 +14,7 @@
 # NOTE: You can find Japanese version of this document at:
 # http://www.ruby-lang.org/ja/man/html/net_smtp.html
 #
-# $Id: smtp.rb 45111 2014-02-22 05:39:58Z naruse $
+# $Id: smtp.rb 40295 2013-04-14 15:19:46Z nagachika $
 #
 # See Net::SMTP for documentation.
 #
@@ -76,9 +76,8 @@ module Net
   #
   # This library does NOT provide functions to compose internet mails.
   # You must create them by yourself. If you want better mail support,
-  # try RubyMail or TMail or search for alternatives in
-  # {RubyGems.org}[https://rubygems.org/] or {The Ruby
-  # Toolbox}[https://www.ruby-toolbox.com/].
+  # try RubyMail or TMail. You can get both libraries from RAA.
+  # (http://www.ruby-lang.org/en/raa.html)
   #
   # FYI: the official documentation on internet mail is: [RFC2822] (http://www.ietf.org/rfc/rfc2822.txt).
   #
@@ -171,7 +170,7 @@ module Net
   #
   class SMTP
 
-    Revision = %q$Revision: 45111 $.split[1]
+    Revision = %q$Revision: 40295 $.split[1]
 
     # The default SMTP port number, 25.
     def SMTP.default_port
@@ -216,7 +215,7 @@ module Net
       @started = false
       @open_timeout = 30
       @read_timeout = 60
-      @error_occurred = false
+      @error_occured = false
       @debug_output = nil
       @tls = false
       @starttls = false
@@ -606,17 +605,17 @@ module Net
     rescue SMTPError
       if @esmtp
         @esmtp = false
-        @error_occurred = false
+        @error_occured = false
         retry
       end
       raise
     end
 
     def do_finish
-      quit if @socket and not @socket.closed? and not @error_occurred
+      quit if @socket and not @socket.closed? and not @error_occured
     ensure
       @started = false
-      @error_occurred = false
+      @error_occured = false
       @socket.close if @socket and not @socket.closed?
       @socket = nil
     end
@@ -816,12 +815,6 @@ module Net
 
     public
 
-    # Aborts the current mail transaction
-
-    def rset
-      getok('RSET')
-    end
-
     def starttls
       getok('STARTTLS')
     end
@@ -943,11 +936,11 @@ module Net
     end
 
     def critical
-      return Response.parse('200 dummy reply code') if @error_occurred
+      return '200 dummy reply code' if @error_occured
       begin
         return yield()
       rescue Exception
-        @error_occurred = true
+        @error_occured = true
         raise
       end
     end
@@ -1042,7 +1035,7 @@ module Net
         h
       end
 
-      # Determines whether there was an error and raises the appropriate error
+      # Determines whether there was an error and raies the appropriate error
       # based on the reply code of the response
       def exception_class
         case @status

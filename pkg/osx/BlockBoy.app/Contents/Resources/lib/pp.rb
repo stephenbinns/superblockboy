@@ -1,13 +1,7 @@
 require 'prettyprint'
 
 module Kernel
-  # Returns a pretty printed object as a string.
-  #
-  # In order to use this method you must first require the PP module:
-  #
-  #   require 'pp'
-  #
-  # See the PP module for more information.
+  # returns a pretty printed object as a string.
   def pretty_inspect
     PP.pp(self, '')
   end
@@ -16,28 +10,23 @@ module Kernel
   # prints arguments in pretty form.
   #
   # pp returns argument(s).
-  def pp(*objs) # :nodoc:
+  def pp(*objs) # :doc:
     objs.each {|obj|
       PP.pp(obj)
     }
     objs.size <= 1 ? objs.first : objs
   end
-  module_function :pp # :nodoc:
+  module_function :pp
 end
 
-##
-# A pretty-printer for Ruby objects.
+# == Pretty-printer for Ruby objects.
 #
-# All examples assume you have loaded the PP class with:
-#   require 'pp'
+# = Which seems better?
 #
-##
-# == What PP Does
-#
-# Standard output by #p returns this:
+# non-pretty-printed output by #p is:
 #   #<PP:0x81fedf0 @genspace=#<Proc:0x81feda0>, @group_queue=#<PrettyPrint::GroupQueue:0x81fed3c @queue=[[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], []]>, @buffer=[], @newline="\n", @group_stack=[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], @buffer_width=0, @indent=0, @maxwidth=79, @output_width=2, @output=#<IO:0x8114ee4>>
 #
-# Pretty-printed output returns this:
+# pretty-printed output by #pp is:
 #   #<PP:0x81fedf0
 #    @buffer=[],
 #    @buffer_width=0,
@@ -55,42 +44,32 @@ end
 #    @output=#<IO:0x8114ee4>,
 #    @output_width=2>
 #
-##
-# == Usage
+# I like the latter.  If you do too, this library is for you.
+#
+# = Usage
 #
 #   pp(obj)             #=> obj
-#   pp obj              #=> obj
 #   pp(obj1, obj2, ...) #=> [obj1, obj2, ...]
 #   pp()                #=> nil
 #
-# Output <tt>obj(s)</tt> to <tt>$></tt> in pretty printed format.
+# output +obj(s)+ to +$>+ in pretty printed format.
 #
-# It returns <tt>obj(s)</tt>.
+# It returns +obj(s)+.
 #
-##
-# == Output Customization
+# = Output Customization
+# To define your customized pretty printing function for your classes,
+# redefine a method #pretty_print(+pp+) in the class.
+# It takes an argument +pp+ which is an instance of the class PP.
+# The method should use PP#text, PP#breakable, PP#nest, PP#group and
+# PP#pp to print the object.
 #
-# To define a customized pretty printing function for your classes,
-# redefine method <code>#pretty_print(pp)</code> in the class.
-#
-# <code>#pretty_print</code> takes the +pp+ argument, which is an instance of the PP class.
-# The method uses #text, #breakable, #nest, #group and #pp to print the
-# object.
-#
-##
-# == Pretty-Print JSON
-#
-# To pretty-print JSON refer to JSON#pretty_generate.
-#
-##
-# == Author
-# Tanaka Akira <akr@fsij.org>
-
+# = Author
+# Tanaka Akira <akr@m17n.org>
 class PP < PrettyPrint
   # Outputs +obj+ to +out+ in pretty printed format of
   # +width+ columns in width.
   #
-  # If +out+ is omitted, <code>$></code> is assumed.
+  # If +out+ is omitted, +$>+ is assumed.
   # If +width+ is omitted, 79 is assumed.
   #
   # PP.pp returns +out+.
@@ -127,44 +106,33 @@ class PP < PrettyPrint
   end
 
   module PPMethods
-
-    # Yields to a block
-    # and preserves the previous set of objects being printed.
     def guard_inspect_key
       if Thread.current[:__recursive_key__] == nil
-        Thread.current[:__recursive_key__] = {}.taint
+        Thread.current[:__recursive_key__] = {}.untrust
       end
 
       if Thread.current[:__recursive_key__][:inspect] == nil
-        Thread.current[:__recursive_key__][:inspect] = {}.taint
+        Thread.current[:__recursive_key__][:inspect] = {}.untrust
       end
 
       save = Thread.current[:__recursive_key__][:inspect]
 
       begin
-        Thread.current[:__recursive_key__][:inspect] = {}.taint
+        Thread.current[:__recursive_key__][:inspect] = {}.untrust
         yield
       ensure
         Thread.current[:__recursive_key__][:inspect] = save
       end
     end
 
-    # Check whether the object_id +id+ is in the current buffer of objects
-    # to be pretty printed. Used to break cycles in chains of objects to be
-    # pretty printed.
     def check_inspect_key(id)
       Thread.current[:__recursive_key__] &&
       Thread.current[:__recursive_key__][:inspect] &&
       Thread.current[:__recursive_key__][:inspect].include?(id)
     end
-
-    # Adds the object_id +id+ to the set of objects being pretty printed, so
-    # as to not repeat objects.
     def push_inspect_key(id)
       Thread.current[:__recursive_key__][:inspect][id] = true
     end
-
-    # Removes an object from the set of objects being pretty printed.
     def pop_inspect_key(id)
       Thread.current[:__recursive_key__][:inspect].delete id
     end
@@ -197,12 +165,18 @@ class PP < PrettyPrint
       group(1, '#<' + obj.class.name, '>', &block)
     end
 
-    # A convenience method, like object_group, but also reformats the Object's
-    # object_id.
+    PointerMask = (1 << ([""].pack("p").size * 8)) - 1
+
+    case Object.new.inspect
+    when /\A\#<Object:0x([0-9a-f]+)>\z/
+      PointerFormat = "%0#{$1.length}x"
+    else
+      PointerFormat = "%x"
+    end
+
     def object_address_group(obj, &block)
-      str = Kernel.instance_method(:to_s).bind(obj).call
-      str.chomp!('>')
-      group(1, str, '>', &block)
+      id = PointerFormat % (obj.object_id * 2 & PointerMask)
+      group(1, "\#<#{obj.class}:0x#{id}", '>', &block)
     end
 
     # A convenience method which is same as follows:
@@ -251,7 +225,6 @@ class PP < PrettyPrint
       }
     end
 
-    # A present standard failsafe for pretty printing any given Object
     def pp_object(obj)
       object_address_group(obj) {
         seplist(obj.pretty_print_instance_variables, lambda { text ',' }) {|v|
@@ -267,7 +240,6 @@ class PP < PrettyPrint
       }
     end
 
-    # A pretty print for a Hash
     def pp_hash(obj)
       group(1, '{', '}') {
         seplist(obj, nil, :each_pair) {|k, v|
@@ -286,11 +258,11 @@ class PP < PrettyPrint
 
   include PPMethods
 
-  class SingleLine < PrettyPrint::SingleLine # :nodoc:
+  class SingleLine < PrettyPrint::SingleLine
     include PPMethods
   end
 
-  module ObjectMixin # :nodoc:
+  module ObjectMixin
     # 1. specific pretty_print
     # 2. specific inspect
     # 3. generic pretty_print
@@ -352,8 +324,8 @@ class PP < PrettyPrint
   end
 end
 
-class Array # :nodoc:
-  def pretty_print(q) # :nodoc:
+class Array
+  def pretty_print(q)
     q.group(1, '[', ']') {
       q.seplist(self) {|v|
         q.pp v
@@ -361,23 +333,23 @@ class Array # :nodoc:
     }
   end
 
-  def pretty_print_cycle(q) # :nodoc:
+  def pretty_print_cycle(q)
     q.text(empty? ? '[]' : '[...]')
   end
 end
 
-class Hash # :nodoc:
-  def pretty_print(q) # :nodoc:
+class Hash
+  def pretty_print(q)
     q.pp_hash self
   end
 
-  def pretty_print_cycle(q) # :nodoc:
+  def pretty_print_cycle(q)
     q.text(empty? ? '{}' : '{...}')
   end
 end
 
-class << ENV # :nodoc:
-  def pretty_print(q) # :nodoc:
+class << ENV
+  def pretty_print(q)
     h = {}
     ENV.keys.sort.each {|k|
       h[k] = ENV[k]
@@ -386,8 +358,8 @@ class << ENV # :nodoc:
   end
 end
 
-class Struct # :nodoc:
-  def pretty_print(q) # :nodoc:
+class Struct
+  def pretty_print(q)
     q.group(1, sprintf("#<struct %s", PP.mcall(self, Kernel, :class).name), '>') {
       q.seplist(PP.mcall(self, Struct, :members), lambda { q.text "," }) {|member|
         q.breakable
@@ -401,13 +373,13 @@ class Struct # :nodoc:
     }
   end
 
-  def pretty_print_cycle(q) # :nodoc:
+  def pretty_print_cycle(q)
     q.text sprintf("#<struct %s:...>", PP.mcall(self, Kernel, :class).name)
   end
 end
 
-class Range # :nodoc:
-  def pretty_print(q) # :nodoc:
+class Range
+  def pretty_print(q)
     q.pp self.begin
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
@@ -416,9 +388,9 @@ class Range # :nodoc:
   end
 end
 
-class File < IO # :nodoc:
-  class Stat # :nodoc:
-    def pretty_print(q) # :nodoc:
+class File < IO
+  class Stat
+    def pretty_print(q)
       require 'etc.so'
       q.object_group(self) {
         q.breakable
@@ -498,8 +470,8 @@ class File < IO # :nodoc:
   end
 end
 
-class MatchData # :nodoc:
-  def pretty_print(q) # :nodoc:
+class MatchData
+  def pretty_print(q)
     nc = []
     self.regexp.named_captures.each {|name, indexes|
       indexes.each {|i| nc[i] = name }
@@ -523,7 +495,7 @@ class MatchData # :nodoc:
   end
 end
 
-class Object < BasicObject # :nodoc:
+class Object < BasicObject
   include PP::ObjectMixin
 end
 

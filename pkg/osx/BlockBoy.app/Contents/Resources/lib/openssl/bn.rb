@@ -14,7 +14,7 @@
 # (See the file 'LICENCE'.)
 #
 # = Version
-# $Id: bn.rb 43663 2013-11-13 08:15:48Z zzak $
+# $Id: bn.rb 36895 2012-09-04 00:57:31Z nobu $
 #
 #++
 
@@ -28,11 +28,8 @@ end # OpenSSL
 # Add double dispatch to Integer
 #
 class Integer
-  # Casts an Integer as an OpenSSL::BN
-  #
-  # See `man bn` for more info.
   def to_bn
-    OpenSSL::BN::new(self)
+    OpenSSL::BN::new(self.to_s(16), 16)
   end
 end # Integer
 

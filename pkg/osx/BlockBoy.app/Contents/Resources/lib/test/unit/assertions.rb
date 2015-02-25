@@ -12,8 +12,10 @@ module Test
 
       MINI_DIR = File.join(File.dirname(File.dirname(File.expand_path(__FILE__))), "minitest") #:nodoc:
 
+      UNASSIGNED = Object.new # :nodoc:
+
       # :call-seq:
-      #   assert(test, [failure_message])
+      #   assert( test, failure_message = UNASSIGNED )
       #
       #Tests if +test+ is true.
       #
@@ -24,15 +26,15 @@ module Test
       #If no +msg+ is given, a default message will be used.
       #
       #    assert(false, "This was expected to be true")
-      def assert(test, *msgs)
-        case msg = msgs.first
+      def assert(test, msg = UNASSIGNED)
+        case msg
+        when UNASSIGNED
+          msg = nil
         when String, Proc
-        when nil
-          msgs.shift
         else
-          bt = caller.reject { |s| s.start_with?(MINI_DIR) }
+          bt = caller.reject { |s| s.rindex(MINI_DIR, 0) }
           raise ArgumentError, "assertion message must be String or Proc, but #{msg.class} was given.", bt
-        end unless msgs.empty?
+        end
         super
       end
 
@@ -54,7 +56,7 @@ module Test
       #   assert_raise( *args, &block )
       #
       #Tests if the given block raises an exception. Acceptable exception
-      #types may be given as optional arguments. If the last argument is a
+      #types maye be given as optional arguments. If the last argument is a
       #String, it will be used as the error message.
       #
       #    assert_raise do #Fails, no Exceptions are raised
@@ -65,50 +67,6 @@ module Test
       #    end
       def assert_raise(*args, &b)
         assert_raises(*args, &b)
-      end
-
-      # :call-seq:
-      #   assert_raise_with_message(exception, expected, msg = nil, &block)
-      #
-      #Tests if the given block raises an exception with the expected
-      #message.
-      #
-      #    assert_raise_with_message(RuntimeError, "foo") do
-      #      nil #Fails, no Exceptions are raised
-      #    end
-      #
-      #    assert_raise_with_message(RuntimeError, "foo") do
-      #      raise ArgumentError, "foo" #Fails, different Exception is raised
-      #    end
-      #
-      #    assert_raise_with_message(RuntimeError, "foo") do
-      #      raise "bar" #Fails, RuntimeError is raised but the message differs
-      #    end
-      #
-      #    assert_raise_with_message(RuntimeError, "foo") do
-      #      raise "foo" #Raises RuntimeError with the message, so assertion succeeds
-      #    end
-      def assert_raise_with_message(exception, expected, msg = nil, &block)
-        case expected
-        when String
-          assert = :assert_equal
-        when Regexp
-          assert = :assert_match
-        else
-          raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
-        end
-
-        ex = assert_raise(exception, *msg) {yield}
-        msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
-
-        if assert == :assert_equal
-          assert_equal(expected, ex.message, msg)
-        else
-          msg = message(msg) { "Expected #{mu_pp expected} to match #{mu_pp ex.message}" }
-          assert expected =~ ex.message, msg
-          block.binding.eval("proc{|_|$~=_}").call($~)
-        end
-        ex
       end
 
       # :call-seq:
@@ -159,8 +117,7 @@ module Test
       # :call-seq:
       #   assert_nothing_thrown( failure_message = nil, &block )
       #
-      #Fails if the given block uses a call to Kernel#throw, and
-      #returns the result of the block otherwise.
+      #Fails if the given block uses a call to Kernel#throw.
       #
       #An optional failure message may be provided as the final argument.
       #
@@ -169,33 +126,13 @@ module Test
       #    end
       def assert_nothing_thrown(msg=nil)
         begin
-          ret = yield
+          yield
         rescue ArgumentError => error
           raise error if /\Auncaught throw (.+)\z/m !~ error.message
           msg = message(msg) { "<#{$1}> was thrown when nothing was expected" }
           flunk(msg)
         end
         assert(true, "Expected nothing to be thrown")
-        ret
-      end
-
-      # :call-seq:
-      #   assert_throw( tag, failure_message = nil, &block )
-      #
-      #Fails unless the given block throws +tag+, returns the caught
-      #value otherwise.
-      #
-      #An optional failure message may be provided as the final argument.
-      #
-      #    tag = Object.new
-      #    assert_throw(tag, "#{tag} was not thrown!") do
-      #      throw tag
-      #    end
-      def assert_throw(tag, msg = nil)
-        catch(tag) do
-          yield(tag)
-          assert(false, message(msg) {"Expected #{mu_pp(tag)} to have been thrown"})
-        end
       end
 
       # :call-seq:
@@ -335,8 +272,8 @@ EOT
       # * Arguments to the method
       #
       # Example:
-      #   assert_send(["Hello world", :include?, "Hello"])    # -> pass
-      #   assert_send(["Hello world", :include?, "Goodbye"])  # -> fail
+      #   assert_send([[1, 2], :member?, 1]) # -> pass
+      #   assert_send([[1, 2], :member?, 4]) # -> fail
       def assert_send send_ary, m = nil
         recv, msg, *args = send_ary
         m = message(m) {
@@ -387,16 +324,6 @@ EOT
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
         template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
-      end
-
-      def message(msg = nil, *args, &default) # :nodoc:
-        if Proc === msg
-          super(nil, *args) do
-            [msg.call, (default.call if default)].compact.reject(&:empty?).join(".\n")
-          end
-        else
-          super
-        end
       end
     end
   end

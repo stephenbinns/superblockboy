@@ -15,13 +15,12 @@
 # module, which provides the methods for managing the associated observer
 # objects.
 #
+# The observers must implement a method called +update+ to receive
+# notifications.
+#
 # The observable object must:
 # * assert that it has +#changed+
 # * call +#notify_observers+
-#
-# An observer subscribes to updates using Observable#add_observer, which also
-# specifies the method called via #notify_observers. The default method for
-# #notify_observers is #update.
 #
 # === Example
 #
@@ -50,13 +49,13 @@
 #     end
 #
 #     def run
-#       last_price = nil
+#       lastPrice = nil
 #       loop do
 #         price = Price.fetch(@symbol)
 #         print "Current price: #{price}\n"
-#         if price != last_price
+#         if price != lastPrice
 #           changed                 # notify observers
-#           last_price = price
+#           lastPrice = price
 #           notify_observers(Time.now, price)
 #         end
 #         sleep 1
@@ -65,7 +64,7 @@
 #   end
 #
 #   class Price           ### A mock class to fetch a stock price (60 - 140).
-#     def self.fetch(symbol)
+#     def Price.fetch(symbol)
 #       60 + rand(80)
 #     end
 #   end

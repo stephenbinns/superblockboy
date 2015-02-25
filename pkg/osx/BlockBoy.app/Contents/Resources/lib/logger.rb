@@ -5,7 +5,7 @@
 # License::
 #   You can redistribute it and/or modify it under the same terms of Ruby's
 #   license; either the dual license version in 2003, or any later version.
-# Revision:: $Id: logger.rb 44203 2013-12-14 05:43:01Z nobu $
+# Revision:: $Id: logger.rb 36483 2012-07-20 23:41:51Z drbrain $
 #
 # A simple system for logging messages.  See Logger for more documentation.
 
@@ -201,7 +201,7 @@ require 'monitor'
 #
 class Logger
   VERSION = "1.2.7"
-  _, name, rev = %w$Id: logger.rb 44203 2013-12-14 05:43:01Z nobu $
+  _, name, rev = %w$Id: logger.rb 36483 2012-07-20 23:41:51Z drbrain $
   if name
     name = name.chomp(",v")
   else
@@ -289,7 +289,8 @@ class Logger
   def fatal?; @level <= FATAL; end
 
   #
-  # :call-seq:
+  # === Synopsis
+  #
   #   Logger.new(name, shift_age = 7, shift_size = 1048576)
   #   Logger.new(name, shift_age = 'weekly')
   #
@@ -321,7 +322,8 @@ class Logger
   end
 
   #
-  # :call-seq:
+  # === Synopsis
+  #
   #   Logger#add(severity, message = nil, progname = nil) { ... }
   #
   # === Args
@@ -338,6 +340,8 @@ class Logger
   #   Can be omitted.  Called to get a message string if +message+ is nil.
   #
   # === Return
+  #
+  # +true+ if successful, +false+ otherwise.
   #
   # When the given severity is not high enough (for this particular logger),
   # log no message, and return +true+.
@@ -588,32 +592,24 @@ private
   private
 
     def open_logfile(filename)
-      begin
+      if (FileTest.exist?(filename))
         open(filename, (File::WRONLY | File::APPEND))
-      rescue Errno::ENOENT
+      else
         create_logfile(filename)
       end
     end
 
     def create_logfile(filename)
-      begin
-        logdev = open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
-        logdev.flock(File::LOCK_EX)
-        logdev.sync = true
-        add_log_header(logdev)
-        logdev.flock(File::LOCK_UN)
-      rescue Errno::EEXIST
-        # file is created by another process
-        logdev = open_logfile(filename)
-        logdev.sync = true
-      end
+      logdev = open(filename, (File::WRONLY | File::APPEND | File::CREAT))
+      logdev.sync = true
+      add_log_header(logdev)
       logdev
     end
 
     def add_log_header(file)
       file.write(
         "# Logfile created on %s by %s\n" % [Time.now.to_s, Logger::ProgName]
-      ) if file.size == 0
+      )
     end
 
     SiD = 24 * 60 * 60
@@ -622,50 +618,14 @@ private
       if @shift_age.is_a?(Integer)
         # Note: always returns false if '0'.
         if @filename && (@shift_age > 0) && (@dev.stat.size > @shift_size)
-          lock_shift_log { shift_log_age }
+          shift_log_age
         end
       else
         now = Time.now
         period_end = previous_period_end(now)
         if @dev.stat.mtime <= period_end
-          lock_shift_log { shift_log_period(period_end) }
+          shift_log_period(period_end)
         end
-      end
-    end
-
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      def lock_shift_log
-        yield
-      end
-    else
-      def lock_shift_log
-        retry_limit = 8
-        retry_sleep = 0.1
-        begin
-          File.open(@filename, File::WRONLY | File::APPEND) do |lock|
-            lock.flock(File::LOCK_EX) # inter-process locking. will be unlocked at closing file
-            if File.identical?(@filename, lock) and File.identical?(lock, @dev)
-              yield # log shifting
-            else
-              # log shifted by another process (i-node before locking and i-node after locking are different)
-              @dev.close rescue nil
-              @dev = open_logfile(@filename)
-              @dev.sync = true
-            end
-          end
-        rescue Errno::ENOENT
-          # @filename file would not exist right after #rename and before #create_logfile
-          if retry_limit <= 0
-            warn("log rotation inter-process lock failed. #{$!}")
-          else
-            sleep retry_sleep
-            retry_limit -= 1
-            retry_sleep *= 2
-            retry
-          end
-        end
-      rescue
-        warn("log rotation inter-process lock failed. #{$!}")
       end
     end
 
@@ -722,7 +682,7 @@ private
   #
   # == Description
   #
-  # Logger::Application --- Add logging support to your application.
+  # Application --- Add logging support to your application.
   #
   # == Usage
   #
@@ -732,7 +692,7 @@ private
   #
   # == Example
   #
-  #   class FooApp < Logger::Application
+  #   class FooApp < Application
   #     def initialize(foo_app, application_specific, arguments)
   #       super('FooApp') # Name of the application.
   #     end
@@ -755,8 +715,9 @@ private
     attr_reader :appname
 
     #
-    # :call-seq:
-    #   Logger::Application.new(appname = '')
+    # == Synopsis
+    #
+    #   Application.new(appname = '')
     #
     # == Args
     #

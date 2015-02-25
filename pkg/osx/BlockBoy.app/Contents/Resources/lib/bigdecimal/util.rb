@@ -1,7 +1,3 @@
-# BigDecimal extends the native Integer class to provide the #to_d method.
-#
-# When you require the BigDecimal library in your application, this methodwill
-# be available on Integer objects.
 class Integer < Numeric
   # call-seq:
   #     int.to_d  -> bigdecimal
@@ -19,10 +15,6 @@ class Integer < Numeric
   end
 end
 
-# BigDecimal extends the native Float class to provide the #to_d method.
-#
-# When you require BigDecimal in your application, this method will be
-# available on Float objects.
 class Float < Numeric
   # call-seq:
   #     flt.to_d  -> bigdecimal
@@ -36,14 +28,10 @@ class Float < Numeric
   #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)>
   #
   def to_d(precision=nil)
-    BigDecimal(self, precision || Float::DIG)
+    BigDecimal(self, precision || Float::DIG+1)
   end
 end
 
-# BigDecimal extends the native String class to provide the #to_d method.
-#
-# When you require BigDecimal in your application, this method will be
-# available on String objects.
 class String
   # call-seq:
   #     string.to_d  -> bigdecimal
@@ -61,11 +49,6 @@ class String
   end
 end
 
-# BigDecimal extends the native Numeric class to provide the #to_digits and
-# #to_d methods.
-#
-# When you require BigDecimal in your application, this method will be
-# available on BigDecimal objects.
 class BigDecimal < Numeric
   # call-seq:
   #     a.to_digits -> string
@@ -98,23 +81,18 @@ class BigDecimal < Numeric
   end
 end
 
-# BigDecimal extends the native Rational class to provide the #to_d method.
-#
-# When you require BigDecimal in your application, this method will be
-# available on Rational objects.
 class Rational < Numeric
   # call-seq:
-  #   r.to_d(precision)   -> bigdecimal
+  #   r.to_d        -> bigdecimal
+  #   r.to_d(sig)   -> bigdecimal
   #
-  # Converts a Rational to a BigDecimal.
-  #
-  # The required +precision+ parameter is used to determine the amount of
-  # significant digits for the result. See BigDecimal#div for more information,
-  # as it is used along with the #denominator and the +precision+ for
-  # parameters.
+  # Converts a Rational to a BigDecimal. Takes an optional parameter +sig+ to
+  # limit the amount of significant digits.
   #
   #   r = (22/7.0).to_r
   #   # => (7077085128725065/2251799813685248)
+  #   r.to_d
+  #   # => #<BigDecimal:1a52bd8,'0.3142857142 8571427937 0154144999 105E1',45(63)>
   #   r.to_d(3)
   #   # => #<BigDecimal:1a44d08,'0.314E1',18(36)>
   def to_d(precision)

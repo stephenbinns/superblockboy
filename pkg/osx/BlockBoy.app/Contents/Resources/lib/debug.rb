@@ -752,18 +752,9 @@ EOHELP
         (id ? ":in `#{id.id2name}'" : "")
     end
 
-    def script_lines(file, line)
-      unless (lines = SCRIPT_LINES__[file]) and lines != true
-        Tracer::Single.get_line(file, line) if File.exist?(file)
-        lines = SCRIPT_LINES__[file]
-        lines = nil if lines == true
-      end
-      lines
-    end
-
     def display_list(b, e, file, line)
-      if lines = script_lines(file, line)
-        stdout.printf "[%d, %d] in %s\n", b, e, file
+      stdout.printf "[%d, %d] in %s\n", b, e, file
+      if lines = SCRIPT_LINES__[file] and lines != true
         b.upto(e) do |n|
           if n > 0 && lines[n-1]
             if n == line
@@ -779,8 +770,11 @@ EOHELP
     end
 
     def line_at(file, line)
-      lines = script_lines(file, line)
-      if lines and line = lines[line-1]
+      lines = SCRIPT_LINES__[file]
+      if lines
+        return "\n" if lines == true
+        line = lines[line-1]
+        return "\n" unless line
         return line
       end
       return "\n"
@@ -916,7 +910,7 @@ EOHELP
 
     # Returns the list of break points where execution will be stopped.
     #
-    # See DEBUGGER__ for more usage
+    # See DEBUGGER__ for more useage
     def break_points
       @break_points
     end

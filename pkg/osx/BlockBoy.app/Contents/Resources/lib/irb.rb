@@ -1,7 +1,7 @@
 #
 #   irb.rb - irb main module
 #       $Release Version: 0.9.6 $
-#       $Revision: 42045 $
+#       $Revision: 39075 $
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -21,16 +21,16 @@ require "irb/locale"
 
 STDOUT.sync = true
 
-# IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
+# IRB stands for "interactive ruby" and is a tool to interactively execute ruby
 # expressions read from the standard input.
 #
 # The +irb+ command from your shell will start the interpreter.
 #
 # == Usage
 #
-# Use of irb is easy if you know Ruby.
+# Use of irb is easy if you know ruby.
 #
-# When executing irb, prompts are displayed as follows. Then, enter the Ruby
+# When executing irb, prompts are displayed as follows. Then, enter the ruby
 # expression. An input is executed when it is syntactically complete.
 #
 #     $ irb
@@ -101,7 +101,7 @@ STDOUT.sync = true
 #     IRB.conf[:USE_TRACER] = false
 #     IRB.conf[:IGNORE_SIGINT] = true
 #     IRB.conf[:IGNORE_EOF] = false
-#     IRB.conf[:PROMPT_MODE] = :DEFAULT
+#     IRB.conf[:PROMPT_MODE] = :DEFALUT
 #     IRB.conf[:PROMPT] = {...}
 #     IRB.conf[:DEBUG_LEVEL]=0
 #
@@ -221,7 +221,7 @@ STDOUT.sync = true
 # == Restrictions
 #
 # Because irb evaluates input immediately after it is syntactically complete,
-# the results may be slightly different than directly using Ruby.
+# the results may be slightly different than directly using ruby.
 #
 # == IRB Sessions
 #
@@ -337,7 +337,7 @@ STDOUT.sync = true
 #   # quit irb
 #   irb(main):010:0> exit
 module IRB
-  @RCS_ID='-$Id: irb.rb 42045 2013-07-18 13:50:32Z zzak $-'
+  @RCS_ID='-$Id: irb.rb 39075 2013-02-05 15:57:19Z zzak $-'
 
   # An exception raised by IRB.irb_abort
   class Abort < Exception;end

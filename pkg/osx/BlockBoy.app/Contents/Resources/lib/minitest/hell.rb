@@ -5,16 +5,12 @@
 # File a patch instead and assign it to Ryan Davis.
 ######################################################################
 
-require "minitest/parallel_each"
-
-# :stopdoc:
-class Minitest::Unit::TestCase
+class Minitest::Unit::TestCase # :nodoc:
   class << self
     alias :old_test_order :test_order
 
-    def test_order
+    def test_order # :nodoc:
       :parallel
     end
   end
 end
-# :startdoc:

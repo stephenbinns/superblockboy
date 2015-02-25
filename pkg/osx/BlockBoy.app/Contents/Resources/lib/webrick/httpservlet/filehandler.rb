@@ -424,18 +424,11 @@ module WEBrick
         }
         list.compact!
 
-        query = req.query
-
-        d0 = nil
-        idx = nil
-        %w[N M S].each_with_index do |q, i|
-          if d = query.delete(q)
-            idx ||= i
-            d0 ||= d
-          end
+        if    d0 = req.query["N"]; idx = 0
+        elsif d0 = req.query["M"]; idx = 1
+        elsif d0 = req.query["S"]; idx = 2
+        else  d0 = "A"           ; idx = 0
         end
-        d0 ||= "A"
-        idx ||= 0
         d1 = (d0 == "A") ? "D" : "A"
 
         if d0 == "A"
@@ -444,65 +437,38 @@ module WEBrick
           list.sort!{|a,b| b[idx] <=> a[idx] }
         end
 
-        namewidth = query["NameWidth"]
-        if namewidth == "*"
-          namewidth = nil
-        elsif !namewidth or (namewidth = namewidth.to_i) < 2
-          namewidth = 25
-        end
-        query = query.inject('') {|s, (k, v)| s << '&' << HTMLUtils::escape("#{k}=#{v}")}
+        res['content-type'] = "text/html"
 
-        type = "text/html"
-        case enc = Encoding.find('filesystem')
-        when Encoding::US_ASCII, Encoding::ASCII_8BIT
-        else
-          type << "; charset=\"#{enc.name}\""
-        end
-        res['content-type'] = type
-
-        title = "Index of #{HTMLUtils::escape(req.path)}"
         res.body = <<-_end_of_html_
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <HTML>
-  <HEAD>
-    <TITLE>#{title}</TITLE>
-    <style type="text/css">
-    <!--
-    .name, .mtime { text-align: left; }
-    .size { text-align: right; }
-    td { text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
-    table { border-collapse: collapse; }
-    tr th { border-bottom: 2px groove; }
-    //-->
-    </style>
-  </HEAD>
+  <HEAD><TITLE>Index of #{HTMLUtils::escape(req.path)}</TITLE></HEAD>
   <BODY>
-    <H1>#{title}</H1>
+    <H1>Index of #{HTMLUtils::escape(req.path)}</H1>
         _end_of_html_
 
-        res.body << "<TABLE width=\"100%\"><THEAD><TR>\n"
-        res.body << "<TH class=\"name\"><A HREF=\"?N=#{d1}#{query}\">Name</A></TH>"
-        res.body << "<TH class=\"mtime\"><A HREF=\"?M=#{d1}#{query}\">Last modified</A></TH>"
-        res.body << "<TH class=\"size\"><A HREF=\"?S=#{d1}#{query}\">Size</A></TH>\n"
-        res.body << "</TR></THEAD>\n"
-        res.body << "<TBODY>\n"
+        res.body << "<PRE>\n"
+        res.body << " <A HREF=\"?N=#{d1}\">Name</A>                          "
+        res.body << "<A HREF=\"?M=#{d1}\">Last modified</A>         "
+        res.body << "<A HREF=\"?S=#{d1}\">Size</A>\n"
+        res.body << "<HR>\n"
 
         list.unshift [ "..", File::mtime(local_path+"/.."), -1 ]
         list.each{ |name, time, size|
           if name == ".."
             dname = "Parent Directory"
-          elsif namewidth and name.size > namewidth
-            dname = name[0...(namewidth - 2)] << '..'
+          elsif name.bytesize > 25
+            dname = name.sub(/^(.{23})(?:.*)/, '\1..')
           else
             dname = name
           end
-          s =  "<TR><TD class=\"name\"><A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A></TD>"
-          s << "<TD class=\"mtime\">" << (time ? time.strftime("%Y/%m/%d %H:%M") : "") << "</TD>"
-          s << "<TD class=\"size\">" << (size >= 0 ? size.to_s : "-") << "</TD></TR>\n"
+          s =  " <A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A>"
+          s << " " * (30 - dname.bytesize)
+          s << (time ? time.strftime("%Y/%m/%d %H:%M      ") : " " * 22)
+          s << (size >= 0 ? size.to_s : "-") << "\n"
           res.body << s
         }
-        res.body << "</TBODY></TABLE>"
-        res.body << "<HR>"
+        res.body << "</PRE><HR>"
 
         res.body << <<-_end_of_html_
     <ADDRESS>

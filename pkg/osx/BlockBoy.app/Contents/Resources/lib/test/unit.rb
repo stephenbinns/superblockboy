@@ -1,21 +1,15 @@
+# test/unit compatibility layer using minitest.
+
 require 'minitest/unit'
 require 'test/unit/assertions'
 require 'test/unit/testcase'
 require 'optparse'
 
-# See Test::Unit
 module Test
-  ##
-  # Test::Unit is an implementation of the xUnit testing framework for Ruby.
-  #
-  # If you are writing new test code, please use MiniTest instead of Test::Unit.
-  #
-  # Test::Unit has been left in the standard library to support legacy test
-  # suites.
   module Unit
-    TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest' # :nodoc:
+    TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest'
 
-    module RunCount # :nodoc: all
+    module RunCount
       @@run_count = 0
 
       def self.have_run?
@@ -35,7 +29,7 @@ module Test
       module_function :run_once
     end
 
-    module Options # :nodoc: all
+    module Options
       def initialize(*, &block)
         @init_hook = block
         @options = nil
@@ -157,7 +151,7 @@ module Test
       end
     end
 
-    module GlobOption # :nodoc: all
+    module GlobOption
       @@testfile_prefix = "test"
 
       def setup_options(parser, options)
@@ -203,7 +197,7 @@ module Test
       end
     end
 
-    module LoadPathOption # :nodoc: all
+    module LoadPathOption
       def setup_options(parser, options)
         super
         parser.on '-Idirectory', 'Add library load path' do |dirs|
@@ -212,7 +206,7 @@ module Test
       end
     end
 
-    module GCStressOption # :nodoc: all
+    module GCStressOption
       def setup_options(parser, options)
         super
         parser.on '--[no-]gc-stress', 'Set GC.stress as true' do |flag|
@@ -238,7 +232,7 @@ module Test
       end
     end
 
-    module RequireFiles # :nodoc: all
+    module RequireFiles
       def non_options(files, options)
         return false if !super
         result = false
@@ -258,7 +252,7 @@ module Test
       end
     end
 
-    class Runner < MiniTest::Unit # :nodoc: all
+    class Runner < MiniTest::Unit
       include Test::Unit::Options
       include Test::Unit::GlobOption
       include Test::Unit::LoadPathOption
@@ -765,7 +759,7 @@ module Test
         rep
       end
 
-      def initialize
+      def initialize # :nodoc:
         super
         @tty = $stdout.tty?
       end
@@ -783,7 +777,7 @@ module Test
       end
     end
 
-    class StatusLineOutput < Struct.new(:runner) # :nodoc: all
+    class StatusLineOutput < Struct.new(:runner)
       def puts(*a) $stdout.puts(*a) unless a.empty? end
       def respond_to_missing?(*a) $stdout.respond_to?(*a) end
       def method_missing(*a, &b) $stdout.__send__(*a, &b) end
@@ -804,7 +798,7 @@ module Test
       end
     end
 
-    class AutoRunner # :nodoc: all
+    class AutoRunner
       class Runner < Test::Unit::Runner
         include Test::Unit::RequireFiles
       end
@@ -845,7 +839,7 @@ module Test
       end
     end
 
-    class ProxyError < StandardError # :nodoc: all
+    class ProxyError < StandardError
       def initialize(ex)
         @message = ex.message
         @backtrace = ex.backtrace
@@ -856,12 +850,7 @@ module Test
   end
 end
 
-module MiniTest # :nodoc: all
-  class Unit
-  end
-end
-
-class MiniTest::Unit::TestCase # :nodoc: all
+class MiniTest::Unit::TestCase
   undef run_test
   RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
   def run_test(name)

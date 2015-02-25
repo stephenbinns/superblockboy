@@ -73,7 +73,7 @@ end
 # The environment variables such as http_proxy, https_proxy and ftp_proxy
 # are in effect by default. Here we disable proxy:
 #
-#   open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
+#   open("http://www.ruby-lang.org/en/raa.html", :proxy => nil) {|f|
 #     # ...
 #   }
 #
@@ -288,7 +288,7 @@ module OpenURI
       end
     end
 
-    http = proxy ? klass.new(target_host, target_port) : klass.new(target_host, target_port, nil)
+    http = klass.new(target_host, target_port)
     if target.class == URI::HTTPS
       require 'net/https'
       http.use_ssl = true
@@ -336,7 +336,7 @@ module OpenURI
     io = buf.io
     io.rewind
     io.status = [resp.code, resp.message]
-    resp.each_name {|name| buf.io.meta_add_field2 name, resp.get_fields(name) }
+    resp.each {|name,value| buf.io.meta_add_field name, value }
     case resp
     when Net::HTTPSuccess
     when Net::HTTPMovedPermanently, # 301
@@ -405,14 +405,13 @@ module OpenURI
       obj.extend Meta
       obj.instance_eval {
         @base_uri = nil
-        @meta = {} # name to string.  legacy.
-        @metas = {} # name to array of strings.
+        @meta = {}
       }
       if src
         obj.status = src.status
         obj.base_uri = src.base_uri
-        src.metas.each {|name, values|
-          obj.meta_add_field2(name, values)
+        src.meta.each {|name, value|
+          obj.meta_add_field(name, value)
         }
       end
     end
@@ -426,15 +425,7 @@ module OpenURI
 
     # returns a Hash that represents header fields.
     # The Hash keys are downcased for canonicalization.
-    # The Hash values are a field body.
-    # If there are multiple field with same field name,
-    # the field values are concatenated with a comma.
     attr_reader :meta
-
-    # returns a Hash that represents header fields.
-    # The Hash keys are downcased for canonicalization.
-    # The Hash value are an array of field values.
-    attr_reader :metas
 
     def meta_setup_encoding # :nodoc:
       charset = self.charset
@@ -455,21 +446,15 @@ module OpenURI
       end
     end
 
-    def meta_add_field2(name, values) # :nodoc:
-      name = name.downcase
-      @metas[name] = values
-      @meta[name] = values.join(', ')
-      meta_setup_encoding if name == 'content-type'
-    end
-
     def meta_add_field(name, value) # :nodoc:
-      meta_add_field2(name, [value])
+      name = name.downcase
+      @meta[name] = value
+      meta_setup_encoding if name == 'content-type'
     end
 
     # returns a Time that represents the Last-Modified field.
     def last_modified
-      if vs = @metas['last-modified']
-        v = vs.join(', ')
+      if v = @meta['last-modified']
         Time.httpdate(v)
       else
         nil
@@ -484,9 +469,9 @@ module OpenURI
     # :startdoc:
 
     def content_type_parse # :nodoc:
-      vs = @metas['content-type']
+      v = @meta['content-type']
       # The last (?:;#{RE_LWS}?)? matches extra ";" which violates RFC2045.
-      if vs && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})(?:;#{RE_LWS}?)?\z}no =~ vs.join(', ')
+      if v && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})(?:;#{RE_LWS}?)?\z}no =~ v
         type = $1.downcase
         subtype = $2.downcase
         parameters = []
@@ -534,13 +519,12 @@ module OpenURI
       end
     end
 
-    # Returns a list of encodings in Content-Encoding field as an array of
-    # strings.
-    #
+    # returns a list of encodings in Content-Encoding field
+    # as an Array of String.
     # The encodings are downcased for canonicalization.
     def content_encoding
-      vs = @metas['content-encoding']
-      if vs && %r{\A#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?(?:,#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?)*}o =~ (v = vs.join(', '))
+      v = @meta['content-encoding']
+      if v && %r{\A#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?(?:,#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?)*}o =~ v
         v.scan(RE_TOKEN).map {|content_coding| content_coding.downcase}
       else
         []

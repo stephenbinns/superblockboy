@@ -64,18 +64,13 @@ class Addrinfo
       else
         sock.connect(self)
       end
-    rescue Exception
-      sock.close
-      raise
-    end
-    if block_given?
-      begin
+      if block_given?
         yield sock
-      ensure
-        sock.close if !sock.closed?
+      else
+        sock
       end
-    else
-      sock
+    ensure
+      sock.close if !sock.closed? && (block_given? || $!)
     end
   end
   private :connect_internal
@@ -182,18 +177,13 @@ class Addrinfo
       sock.ipv6only! if self.ipv6?
       sock.setsockopt(:SOCKET, :REUSEADDR, 1)
       sock.bind(self)
-    rescue Exception
-      sock.close
-      raise
-    end
-    if block_given?
-      begin
+      if block_given?
         yield sock
-      ensure
-        sock.close if !sock.closed?
+      else
+        sock
       end
-    else
-      sock
+    ensure
+      sock.close if !sock.closed? && (block_given? || $!)
     end
   end
 
@@ -205,18 +195,13 @@ class Addrinfo
       sock.setsockopt(:SOCKET, :REUSEADDR, 1)
       sock.bind(self)
       sock.listen(backlog)
-    rescue Exception
-      sock.close
-      raise
-    end
-    if block_given?
-      begin
+      if block_given?
         yield sock
-      ensure
-        sock.close if !sock.closed?
+      else
+        sock
       end
-    else
-      sock
+    ensure
+      sock.close if !sock.closed? && (block_given? || $!)
     end
   end
 
@@ -303,6 +288,11 @@ class Socket < BasicSocket
   # The value of the block is returned.
   # The socket is closed when this method returns.
   #
+  # The optional last argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:timeout] specify the timeout in seconds.
+  #
   # If no block is given, the socket is returned.
   #
   #   Socket.tcp("www.ruby-lang.org", 80) {|sock|
@@ -363,9 +353,8 @@ class Socket < BasicSocket
 
   # :stopdoc:
   def self.ip_sockets_port0(ai_list, reuseaddr)
-    sockets = []
     begin
-      sockets.clear
+      sockets = []
       port = nil
       ai_list.each {|ai|
         begin
@@ -386,13 +375,14 @@ class Socket < BasicSocket
         end
       }
     rescue Errno::EADDRINUSE
-      sockets.each {|s| s.close }
+      sockets.each {|s|
+        s.close
+      }
       retry
-    rescue Exception
-      sockets.each {|s| s.close }
-      raise
     end
     sockets
+  ensure
+    sockets.each {|s| s.close if !s.closed? } if $!
   end
   class << self
     private :ip_sockets_port0
@@ -401,15 +391,12 @@ class Socket < BasicSocket
   def self.tcp_server_sockets_port0(host)
     ai_list = Addrinfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
     sockets = ip_sockets_port0(ai_list, true)
-    begin
-      sockets.each {|s|
-        s.listen(Socket::SOMAXCONN)
-      }
-    rescue Exception
-      sockets.each {|s| s.close }
-      raise
-    end
+    sockets.each {|s|
+      s.listen(Socket::SOMAXCONN)
+    }
     sockets
+  ensure
+    sockets.each {|s| s.close if !s.closed? } if $! && sockets
   end
   class << self
     private :tcp_server_sockets_port0
@@ -453,9 +440,9 @@ class Socket < BasicSocket
     if port == 0
       sockets = tcp_server_sockets_port0(host)
     else
-      last_error = nil
-      sockets = []
       begin
+        last_error = nil
+        sockets = []
         Addrinfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
           begin
             s = ai.listen
@@ -468,9 +455,8 @@ class Socket < BasicSocket
         if sockets.empty?
           raise last_error
         end
-      rescue Exception
-        sockets.each {|s| s.close }
-        raise
+      ensure
+        sockets.each {|s| s.close if !s.closed? } if $!
       end
     end
     if block_given?

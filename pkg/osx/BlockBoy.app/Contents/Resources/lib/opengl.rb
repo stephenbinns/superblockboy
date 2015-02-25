@@ -20,13 +20,9 @@
 # Thanks to Ilmari Heikkinen for a previous "reversed" version of this code,
 # and to Bill Kelly for a version before that one.
 
-module OpenGL
-
-  VERSION = '0.8.0'
-
-end
-
-require 'opengl/opengl'
+require 'gl'
+require 'glu'
+require 'glut'
 
 include Gl,Glu,Glut
 
@@ -35,15 +31,15 @@ include Gl,Glu,Glut
 module GL
 	extend self
 	include Gl
-
+	
 	Gl.constants.each do |cn|
 		n = cn.to_s.sub(/^GL_/,'')
 		# due to ruby naming scheme, we can't export constants with leading decimal,
 		# e.g. (Gl::)GL_2D would under old syntax become (GL::)2D which is illegal
-		next if n =~ /^[0-9]/
+		next if n =~ /^[0-9]/ 
 		const_set( n, Gl.const_get( cn ) )
 	end
-
+	
 	Gl.methods( false ).each do |mn|
 		n = mn.to_s.sub(/^gl/,'')
 		alias_method( n, mn )
@@ -56,12 +52,12 @@ end
 module GLU
 	extend self
 	include Glu
-
+	
 	Glu.constants.each do |cn|
 		n = cn.to_s.sub(/^GLU_/,'')
 		const_set( n, Glu.const_get( cn ) )
 	end
-
+	
 	Glu.methods( false ).each do |mn|
 		n = mn.to_s.sub(/^glu/,'')
 		alias_method( n, mn )
@@ -74,13 +70,12 @@ end
 module GLUT
 	extend self
 	include Glut
-
+	
 	Glut.constants.each do |cn|
 		n = cn.to_s.sub(/^GLUT_/,'')
-		next if n =~ /^[0-9]/
 		const_set( n, Glut.const_get( cn ) )
 	end
-
+	
 	Glut.methods( false ).each do |mn|
 		n = mn.to_s.sub(/^glut/,'')
 		alias_method( n, mn )

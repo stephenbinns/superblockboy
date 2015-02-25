@@ -39,7 +39,7 @@ module WEBrick
 
     # Root of the HTTP info statuses
     class Info        < Status; end
-    # Root of the HTTP success statuses
+    # Root of the HTTP sucess statuses
     class Success     < Status; end
     # Root of the HTTP redirect statuses
     class Redirect    < Status; end

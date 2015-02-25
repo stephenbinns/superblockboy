@@ -7,7 +7,7 @@
 # All rights reserved.  You can redistribute and/or modify it under
 # the same terms as Ruby.
 #
-#   $Id: hmac.rb 43668 2013-11-13 10:09:28Z zzak $
+#   $Id: hmac.rb 31594 2011-05-16 20:52:55Z drbrain $
 #
 
 warn "use of the experimetal library 'digest/hmac' is discouraged; require 'openssl' and use OpenSSL::HMAC instead." if $VERBOSE
@@ -41,7 +41,7 @@ module Digest
   #     hmac.update(buf)
   #   end
   #
-  #   puts hmac.hexdigest
+  #   puts hmac.bubblebabble
   #
   class HMAC < Digest::Class
 

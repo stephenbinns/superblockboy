@@ -15,7 +15,7 @@ class CGI
   # Standard internet newline sequence
   EOL = CR + LF
 
-  REVISION = '$Id: core.rb 44184 2013-12-13 16:11:12Z akr $' #:nodoc:
+  REVISION = '$Id: core.rb 37811 2012-11-22 17:42:06Z zzak $' #:nodoc:
 
   # Whether processing will be required in binary vs text
   NEEDS_BINMODE = File::BINARY != 0
@@ -238,7 +238,7 @@ class CGI
         arr.each {|c| buf << "Set-Cookie: #{c}#{EOL}" }
       when Hash
         hash = cookie
-        hash.each_value {|c| buf << "Set-Cookie: #{c}#{EOL}" }
+        hash.each {|name, c| buf << "Set-Cookie: #{c}#{EOL}" }
       end
     end
     if @output_cookies
@@ -574,28 +574,27 @@ class CGI
       raise EOFError, "bad boundary end of body part" unless boundary_end =~ /--/
       params.default = []
       params
-    rescue Exception
-      if tempfiles
+    ensure
+      if $! && tempfiles
         tempfiles.each {|t|
           if t.path
             t.unlink
           end
         }
       end
-      raise
     end # read_multipart
     private :read_multipart
     def create_body(is_large)  #:nodoc:
       if is_large
         require 'tempfile'
-        body = Tempfile.new('CGI', encoding: Encoding::ASCII_8BIT)
+        body = Tempfile.new('CGI', encoding: "ascii-8bit")
       else
         begin
           require 'stringio'
-          body = StringIO.new("".force_encoding(Encoding::ASCII_8BIT))
+          body = StringIO.new("".force_encoding("ascii-8bit"))
         rescue LoadError
           require 'tempfile'
-          body = Tempfile.new('CGI', encoding: Encoding::ASCII_8BIT)
+          body = Tempfile.new('CGI', encoding: "ascii-8bit")
         end
       end
       body.binmode if defined? body.binmode
@@ -702,9 +701,9 @@ class CGI
         if value
           return value
         elsif defined? StringIO
-          StringIO.new("".force_encoding(Encoding::ASCII_8BIT))
+          StringIO.new("".force_encoding("ascii-8bit"))
         else
-          Tempfile.new("CGI",encoding: Encoding::ASCII_8BIT)
+          Tempfile.new("CGI",encoding:"ascii-8bit")
         end
       else
         str = if value then value.dup else "" end
@@ -833,23 +832,29 @@ class CGI
     when "html3"
       require 'cgi/html'
       extend Html3
+      element_init()
       extend HtmlExtension
     when "html4"
       require 'cgi/html'
       extend Html4
+      element_init()
       extend HtmlExtension
     when "html4Tr"
       require 'cgi/html'
       extend Html4Tr
+      element_init()
       extend HtmlExtension
     when "html4Fr"
       require 'cgi/html'
       extend Html4Tr
+      element_init()
       extend Html4Fr
+      element_init()
       extend HtmlExtension
     when "html5"
       require 'cgi/html'
       extend Html5
+      element_init()
       extend HtmlExtension
     end
   end

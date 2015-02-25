@@ -26,27 +26,6 @@ module Timeout
   class Error < RuntimeError
   end
   class ExitException < ::Exception # :nodoc:
-    attr_reader :thread
-
-    def self.catch(*args)
-      exc = new(*args)
-      exc.instance_variable_set(:@thread, Thread.current)
-      exc.freeze
-      ::Kernel.catch(exc) {yield exc}
-    end
-
-    def exception(*)
-      if self.thread == Thread.current
-        bt = caller
-        begin
-          throw(self, bt)
-        rescue ArgumentError => e
-          raise unless e.message.start_with?("uncaught throw")
-          raise Error, message, backtrace
-        end
-      end
-      self
-    end
   end
 
   # :stopdoc:
@@ -66,17 +45,13 @@ module Timeout
   # Returns the result of the block *if* the block completed before
   # +sec+ seconds, otherwise throws an exception, based on the value of +klass+.
   #
-  # The exception thrown to terminate the given block cannot be rescued inside
-  # the block unless +klass+ is given explicitly.
-  #
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
   def timeout(sec, klass = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
-    message = "execution expired"
-    e = Error
-    bl = proc do |exception|
+    exception = klass || Class.new(ExitException)
+    begin
       begin
         x = Thread.current
         y = Thread.start {
@@ -85,7 +60,7 @@ module Timeout
           rescue => e
             x.raise e
           else
-            x.raise exception, message
+            x.raise exception, "execution expired"
           end
         }
         return yield(sec)
@@ -95,23 +70,18 @@ module Timeout
           y.join # make sure y is dead.
         end
       end
-    end
-    if klass
-      begin
-        bl.call(klass)
-      rescue klass => e
-        bt = e.backtrace
+    rescue exception => e
+      rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
+      (bt = e.backtrace).reject! {|m| rej =~ m}
+      level = -caller(CALLER_OFFSET).size
+      while THIS_FILE =~ bt[level]
+        bt.delete_at(level)
+        level += 1
       end
-    else
-      bt = ExitException.catch(message, &bl)
+      raise if klass            # if exception class is specified, it
+                                # would be expected outside.
+      raise Error, e.message, e.backtrace
     end
-    rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
-    bt.reject! {|m| rej =~ m}
-    level = -caller(CALLER_OFFSET).size
-    while THIS_FILE =~ bt[level]
-      bt.delete_at(level)
-    end
-    raise(e, message, bt)
   end
 
   module_function :timeout

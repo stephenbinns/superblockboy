@@ -75,16 +75,13 @@ module WEBrick
 
       def flush(output=nil)
         output ||= @path
-        tmp = Tempfile.create("htpasswd", File::dirname(output))
-        renamed = false
+        tmp = Tempfile.new("htpasswd", File::dirname(output))
         begin
           each{|item| tmp.puts(item.join(":")) }
           tmp.close
           File::rename(tmp.path, output)
-          renamed = true
-        ensure
-          tmp.close if !tmp.closed?
-          File.unlink(tmp.path) if !renamed
+        rescue
+          tmp.close(true)
         end
       end
 

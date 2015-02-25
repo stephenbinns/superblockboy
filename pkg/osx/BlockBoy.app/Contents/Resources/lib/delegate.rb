@@ -43,14 +43,7 @@
 class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
-    alias __raise__ raise
     [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
-      undef_method m
-    end
-    private_instance_methods.each do |m|
-      if /\Ablock_given\?\z|iterator\?\z|\A__.*__\z/ =~ m
-        next
-      end
       undef_method m
     end
   end
@@ -74,18 +67,11 @@ class Delegator < BasicObject
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
   def method_missing(m, *args, &block)
-    r = true
-    target = self.__getobj__ {r = false}
+    target = self.__getobj__
     begin
-      if r && target.respond_to?(m)
-        target.__send__(m, *args, &block)
-      elsif ::Kernel.respond_to?(m, true)
-        ::Kernel.instance_method(m).bind(self).(*args, &block)
-      else
-        super(m, *args, &block)
-      end
+      target.respond_to?(m) ? target.__send__(m, *args, &block) : super(m, *args, &block)
     ensure
-      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:(?:#{[__LINE__-7, __LINE__-5, __LINE__-3].join('|')}):"o =~ t} if $@
+      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:"o =~ t} if $@
     end
   end
 
@@ -94,10 +80,8 @@ class Delegator < BasicObject
   # call through \_\_getobj\_\_.
   #
   def respond_to_missing?(m, include_private)
-    r = true
-    target = self.__getobj__ {r = false}
-    r &&= target.respond_to?(m, include_private)
-    if r && include_private && !target.respond_to?(m, false)
+    r = self.__getobj__.respond_to?(m, include_private)
+    if r && include_private && !self.__getobj__.respond_to?(m, false)
       warn "#{caller(3)[0]}: delegator does not forward private method \##{m}"
       return false
     end
@@ -158,7 +142,7 @@ class Delegator < BasicObject
   # method calls are being delegated to.
   #
   def __getobj__
-    __raise__ ::NotImplementedError, "need to define `__getobj__'"
+    raise NotImplementedError, "need to define `__getobj__'"
   end
 
   #
@@ -166,7 +150,7 @@ class Delegator < BasicObject
   # to _obj_.
   #
   def __setobj__(obj)
-    __raise__ ::NotImplementedError, "need to define `__setobj__'"
+    raise NotImplementedError, "need to define `__setobj__'"
   end
 
   #
@@ -246,34 +230,6 @@ end
 # and even to change the object being delegated to at a later time with
 # #__setobj__.
 #
-#   class User
-#     def born_on
-#       Date.new(1989, 09, 10)
-#     end
-#   end
-#
-#   class UserDecorator < SimpleDelegator
-#     def birth_year
-#       born_on.year
-#     end
-#   end
-#
-#   decorated_user = UserDecorator.new(User.new)
-#   decorated_user.birth_year  #=> 1989
-#   decorated_user.__getobj__  #=> #<User: ...>
-#
-# A SimpleDelegator instance can take advantage of the fact that SimpleDelegator
-# is a subclass of +Delegator+ to call <tt>super</tt> to have methods called on
-# the object being delegated to.
-#
-#   class SuperArray < SimpleDelegator
-#     def [](*args)
-#       super + 1
-#     end
-#   end
-#
-#   SuperArray.new([1])[0]  #=> 2
-#
 # Here's a simple example that takes advantage of the fact that
 # SimpleDelegator's delegation object can be changed at any time.
 #
@@ -309,10 +265,6 @@ end
 class SimpleDelegator<Delegator
   # Returns the current object method calls are being delegated to.
   def __getobj__
-    unless defined?(@delegate_sd_obj)
-      return yield if block_given?
-      __raise__ ::ArgumentError, "not delegated"
-    end
     @delegate_sd_obj
   end
 
@@ -331,7 +283,7 @@ class SimpleDelegator<Delegator
   #   puts names[1]    # => Sinclair
   #
   def __setobj__(obj)
-    __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
+    raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
     @delegate_sd_obj = obj
   end
 end
@@ -387,14 +339,10 @@ def DelegateClass(superclass)
   methods -= [:to_s,:inspect,:=~,:!~,:===]
   klass.module_eval do
     def __getobj__  # :nodoc:
-      unless defined?(@delegate_dc_obj)
-        return yield if block_given?
-        __raise__ ::ArgumentError, "not delegated"
-      end
       @delegate_dc_obj
     end
     def __setobj__(obj)  # :nodoc:
-      __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
+      raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
     methods.each do |method|

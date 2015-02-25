@@ -678,8 +678,11 @@ module REXML
     #   pretty-printed in such a way that the added whitespace does not affect
     #   the parse tree of the document
     # ie_hack::
-    #   This hack inserts a space before the /> on empty tags to address
-    #   a limitation of Internet Explorer.  Defaults to false
+    #   Internet Explorer is the worst piece of crap to have ever been
+    #   written, with the possible exception of Windows itself.  Since IE is
+    #   unable to parse proper XML, we have to provide a hack to generate XML
+    #   that IE's limited abilities can handle.  This hack inserts a space
+    #   before the /> on empty tags.  Defaults to false
     #
     #  out = ''
     #  doc.write( out )     #-> doc is written to the string 'out'
@@ -987,7 +990,7 @@ module REXML
     end
 
     def to_a
-      enum_for(:each_attribute).to_a
+      values.flatten
     end
 
     # Returns the number of attributes the owning Element contains.

@@ -42,7 +42,7 @@ module DRb
       # Create a new DRb::DRbSSLSocket::SSLConfig instance
       #
       # The DRb::DRbSSLSocket will take either a +config+ Hash or an instance
-      # of SSLConfig, and will setup the certificate for its session for the
+      # of SSLConfg, and will setup the certificate for its session for the
       # configuration. If want it to generate a generic certificate, the bare
       # minimum is to provide the :SSLCertName
       #
@@ -299,7 +299,7 @@ module DRb
     # +uri+ is the URI we are connected to.
     # +soc+ is the tcp socket we are bound to.
     # +config+ is our configuration. Either a Hash or SSLConfig
-    # +is_established+ is a boolean of whether +soc+ is currently established
+    # +is_established+ is a boolean of whether +soc+ is currenly established
     #
     # This is called automatically based on the DRb protocol.
     def initialize(uri, soc, config, is_established)
@@ -328,9 +328,8 @@ module DRb
       end
       begin
 	ssl = @config.accept(soc)
-      rescue Exception
-        soc.close
-        raise
+      ensure
+        soc.close if $!
       end
       self.class.new(uri, ssl, @config, true)
       rescue OpenSSL::SSL::SSLError

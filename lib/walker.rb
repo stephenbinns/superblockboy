@@ -14,8 +14,18 @@ class Enemy < GameObject
     out.concat Flyer.all
   end
 
+  def visible?
+    game_state.viewport.inside? self 
+  end
+
   def draw
-    if game_state.viewport.inside? self
+    if visible?
+      super
+    end
+  end
+
+  def update
+    if visible?
       super
     end
   end
@@ -136,6 +146,7 @@ class Walker < Enemy
       self.velocity_y = 0
       self.velocity_x = 0
       self.acceleration_y = 0
+      return
     else
       self.acceleration_y = 0.5
       set_direction :left if velocity_x == 0

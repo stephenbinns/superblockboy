@@ -35,8 +35,7 @@ module Psych
     warn "#{caller[0]}: detect_implicit is deprecated" if $VERBOSE
     return '' unless String === thing
     return 'null' if '' == thing
-    ss = ScalarScanner.new(ClassLoader.new)
-    ss.tokenize(thing).class.name.downcase
+    ScalarScanner.new.tokenize(thing).class.name.downcase
   end
 
   def self.add_ruby_type type_tag, &block

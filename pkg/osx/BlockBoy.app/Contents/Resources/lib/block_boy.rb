@@ -12,7 +12,7 @@ class BlockBoy < GameObject
       [:r] => :reset
     }
 
-    @animations = Chingu::Animation.new(file: 'player_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/player_16x16.png')
     @animations.frame_names = { none: 0..0, left: 4..6, right: 0..3 }
 
     @animation = @animations[:none]
@@ -97,10 +97,8 @@ class BlockBoy < GameObject
     self.collidable = false # Stops further collisions in each_collsiion() etc - so fall off map!.
     @dying = true
     after(500) do
-      unless @hardcore
-        self.x = @spawn_x
-        self.y = @spawn_y
-      end
+      self.x = @spawn_x
+      self.y = @spawn_y
       self.collidable = true
       @dying = false
     end
@@ -112,8 +110,18 @@ class BlockBoy < GameObject
     return unless game_state.tiles
 
     tiles = game_state.tiles.tiles_around_object(self)
-    each_collision(tiles) do | _me, tile |
-      break if tile.instance_of? JumpPad
+    each_bounding_box_collision(tiles) do | _me, tile |
+      if tile.instance_of? JumpPad
+        if velocity_y < 0
+          self.y = tile.bb.bottom + image.height * factor_y
+          self.velocity_y = 0
+        else
+          @jumping = false
+          self.velocity_y = -20
+          self.y = tile.bb.top - 1
+        end
+        break
+      end
 
       if velocity_y < 0  # Hitting the ceiling
         self.y = tile.bb.bottom + image.height * factor_y
@@ -123,11 +131,15 @@ class BlockBoy < GameObject
         self.y = tile.bb.top - 1
       end
 
-      set_spawn self.x, self.y
+      set_spawn self.x, self.y unless @hardcore
+      break
     end
 
-    each_collision(Lava) do |_me, _lava|
+    each_bounding_box_collision(Lava) do |_me, _lava|
       die
+
+      break if @hardcore
+
       if @direction == :right
         set_spawn @spawn_x - @speed, @spawn_y
       else
@@ -136,8 +148,8 @@ class BlockBoy < GameObject
       break
     end
 
-    each_collision(Door) do | _, _ |
-      if @bloodlust# && Enemy.all_enemies.count > 0
+    each_bounding_box_collision(Door) do | _, _ |
+      if @bloodlust && Enemy.all_enemies.count > 0
         game_state.notify 'There are enemies to kill'
       else
         game_state.next_level
@@ -146,17 +158,17 @@ class BlockBoy < GameObject
       end
     end
 
-    each_collision(Coin) do | _, coin |
+    each_bounding_box_collision(Coin) do | _, coin |
       coin.die
     end
 
-    each_collision(PowerUp) do | _, item |
+    each_bounding_box_collision(PowerUp) do | _, item |
       item.die
       @can_fire = true
-      game_state.notify 'Press Z to fire'
+      game_state.notify 'Press X to fire'
     end
 
-    each_collision(Enemy.all_enemies) do |_me, _enemy|
+    each_bounding_box_collision(Enemy.all_enemies) do |_me, _enemy|
       if bb.bottom < _enemy.bb.bottom
         _enemy.die
         self.velocity_y = -4
@@ -164,17 +176,6 @@ class BlockBoy < GameObject
         die
       end
       break
-    end
-
-    each_collision(JumpPad) do | _, tile |
-      if velocity_y < 0
-        self.y = tile.bb.bottom + image.height * factor_y
-        self.velocity_y = 0
-      else
-        @jumping = false
-        self.velocity_y = -20
-        self.y = tile.bb.top - 1
-      end
     end
 
     unless game_state.viewport.inside_game_area? self

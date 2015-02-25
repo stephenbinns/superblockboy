@@ -1,7 +1,7 @@
 #
 #   shell/command-controller.rb -
 #       $Release Version: 0.7 $
-#       $Revision: 42961 $
+#       $Revision: 38201 $
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
@@ -369,12 +369,7 @@ class Shell
 
       for p in @shell.system_path
         path = join(p, command)
-        begin
-          st = File.stat(path)
-        rescue SystemCallError
-          next
-        else
-          next unless st.executable? and !st.directory?
+        if FileTest.exist?(path)
           @system_commands[command] = path
           return path
         end

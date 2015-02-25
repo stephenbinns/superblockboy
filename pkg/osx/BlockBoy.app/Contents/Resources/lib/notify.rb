@@ -38,8 +38,8 @@ class Notify
       size: size,
       color: color,
       text: string)
-    text.x -= @text.image.width / 2
-    text.y -= @text.image.height / 2
+    text.x -= text.image.width / 2
+    text.y -= text.image.height / 2
 
     text
   end
