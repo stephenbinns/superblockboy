@@ -1,0 +1,5 @@
+vendor/*
+*.swp
+wrappers/*
+pkg/*
+bin/*
