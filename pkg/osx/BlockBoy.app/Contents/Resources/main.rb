@@ -35,41 +35,10 @@ class Intro < GameState
   end
 end
 
-class MainMenu < GameState
-  def initialize
-    super
-    centered_text 'SUPER', 50, Color.new(0xff0e4612), 80
-    centered_text 'SUPER', 54, Color.new(0xff3c733f), 80
-
-    centered_text 'BlockBoy', 120, Color.new(0xff0e4612)
-    centered_text 'BlockBoy', 124, Color.new(0xff3c733f)
-
-    centered_text '---------', 180, Color.new(0xff0e4612), 28
-    centered_text '---------', 184, Color.new(0xff3c733f), 28
-
-    @menu = CustomMenu.new(
-      menu_items: [
-        ['Easy', PlayState],
-        ['Hardcore', lambda { 
-          state = PlayState.new(:mode => :hardcore)
-          switch_game_state state
-        }],
-        ['Bloodlust', lambda { 
-          state = PlayState.new(:mode => :bloodlust)
-          switch_game_state state
-        }],
-        ['Exit', lambda { exit }]
-      ],
-      font: 'media/bubble.ttf',
-      size: 28,
-      spacing: 25,
-      selected_color: Color.new(0xff0e4612),
-      unselected_color: Color.new(0xff3c733f),
-      y: 200
-    )
-
-    centered_text '---------', 395, Color.new(0xff0e4612), 28
-    centered_text '---------', 399, Color.new(0xff3c733f), 28
+class TextHeavyState < GameState
+  def double_text(string, y, size=28)
+    centered_text string, y, Color.new(0xff0e4612), size
+    centered_text string, (y + 4), Color.new(0xff3c733f), size
   end
 
   def centered_text(string, y, color, size = 56)
@@ -82,6 +51,44 @@ class MainMenu < GameState
       text: string)
     text.x -= text.image.width / 2
   end
+end
+
+class MainMenu < TextHeavyState
+  def initialize
+    super
+    Music.play
+    double_text 'SUPER', 50, 80
+    double_text 'BlockBoy', 120, 56
+
+    double_text '---------', 180
+
+    @menu = CustomMenu.new(
+      menu_items: [
+        ['Easy', lambda {
+          state = Controls.new(:mode => :easy)
+          switch_game_state state
+        }],
+        ['Hardcore', lambda { 
+          state = Controls.new(:mode => :hardcore)
+          switch_game_state state
+        }],
+        ['Bloodlust', lambda { 
+          state = Controls.new(:mode => :bloodlust)
+          switch_game_state state
+        }],
+        ['Exit', lambda { exit }]
+      ],
+      font: 'media/bubble.ttf',
+      size: 28,
+      spacing: 25,
+      selected_color: Color.new(0xff0e4612),
+      unselected_color: Color.new(0xff3c733f),
+      y: 200
+    )
+
+    double_text '---------', 395
+  end
+
 
   def draw
     super
@@ -92,6 +99,74 @@ class MainMenu < GameState
   def update
     super
     @menu.update
+  end
+end
+
+class Controls < TextHeavyState
+  trait :timer
+  def initialize(options = {})
+    super
+    @mode = options[:mode]
+  end
+
+  def setup
+    self.input = { space: :start }
+    after(5000) { start }
+    
+    double_text 'Controls', 120, 56
+
+    double_text '---------', 180    
+    double_text 'Arrow keys mode', 225
+    double_text 'Hold Z to run', 250
+    double_text 'Press X to fireball', 275 
+    double_text 'Press R to reset', 300
+
+    if @mode == :bloodlust
+      double_text 'To complete levels', 325
+      double_text 'You must kill all enemies', 350
+      double_text '---------', 385
+    else
+      double_text 'Get to the door to', 325
+      double_text 'Complete the level', 350
+      double_text '---------', 385
+    end
+  end
+
+  def start
+    state = PlayState.new(:mode => @mode)
+    switch_game_state state
+  end
+
+  def draw
+    super
+    fill(Color.new 0xffaac50e)
+  end
+end
+
+class Complete < TextHeavyState
+  trait :timer
+  def setup
+    self.input = { space: :start }
+    after(2000) { start }
+    
+    double_text 'Well done', 120, 56
+
+    double_text '---------', 180    
+    double_text 'But the princess', 225
+    double_text 'is in anonther', 250
+    double_text 'castle....', 275 
+    double_text 'Game over!', 300
+    double_text '---------', 325
+  end
+
+  def start
+    state = MainMenu.new
+    switch_game_state state
+  end
+
+  def draw
+    super
+    fill(Color.new 0xffaac50e)
   end
 end
 
@@ -144,6 +219,11 @@ class PlayState < GameState
   end
 
   def load_level(number)
+    if number == 13
+      state = Complete.new
+      switch_game_state state
+      return
+    end
     puts "loading level #{number}"
     @tiles = Tileset.new({ filename: "media/level1-#{number}.csv" }, self)
     @tiles.load
