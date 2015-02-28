@@ -15,12 +15,23 @@ require_relative 'lib/walker'
 
 class Game < Chingu::Window
   def initialize
-    super(640, 480, false)
+    load_options
+    super(640, 480, @options[:fullscreen])
   end
 
   def setup
     retrofy
     switch_game_state(Intro)
+  end
+
+  def load_options
+    begin
+      @options = YAML::load_file('options.yml')
+    rescue
+      @options = {
+        :fullscreen => true
+      }
+    end
   end
 end
 
@@ -113,7 +124,7 @@ class Controls < TextHeavyState
     self.input = { space: :start }
     after(5000) { start }
     
-    double_text 'Controls', 120, 56
+    double_text 'Controls', 80, 56
 
     double_text '---------', 180    
     double_text 'Arrow keys mode', 225
@@ -147,16 +158,16 @@ class Complete < TextHeavyState
   trait :timer
   def setup
     self.input = { space: :start }
-    after(2000) { start }
+    after(5000) { start }
     
     double_text 'Well done', 120, 56
 
     double_text '---------', 180    
     double_text 'But the princess', 225
-    double_text 'is in anonther', 250
+    double_text 'is in another', 250
     double_text 'castle....', 275 
     double_text 'Game over!', 300
-    double_text '---------', 325
+    double_text '---------', 335
   end
 
   def start
@@ -180,8 +191,8 @@ class PlayState < GameState
     $window.caption = 'Block boy'
 
     self.input = {
-      escape: :exit,
-      s: :next_level
+      escape: :exit
+      #s: :next_level
     }
     viewport.game_area = [0, 0, 3500, 2000]
 
@@ -225,7 +236,7 @@ class PlayState < GameState
       return
     end
     puts "loading level #{number}"
-    @tiles = Tileset.new({ filename: "media/level1-#{number}.csv" }, self)
+    @tiles = Tileset.new({ filename: "media/#{number}.csv" }, self)
     @tiles.load
 
     @player.x = @tiles.spawn[0]
@@ -250,6 +261,7 @@ class PlayState < GameState
     super
     viewport.center_around(@player)
 
+    Music.play
     if @notify
       @notify.update
       if @notify.dead?

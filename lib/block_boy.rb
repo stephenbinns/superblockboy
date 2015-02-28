@@ -67,11 +67,13 @@ class BlockBoy < GameObject
     return if @dying
     return unless @can_fire
     Fireball.create(x: x, y: y - 8, direction: @direction)
+    Sound['media/fire.wav'].play
   end
 
   def jump
     return if @jumping
     @jumping = true
+    Sound['media/jump.wav'].play
 
     self.velocity_y = -10
   end
@@ -96,6 +98,7 @@ class BlockBoy < GameObject
   end
 
   def die
+    Sound['media/hit.wav'].play
     self.collidable = false # Stops further collisions in each_collsiion() etc - so fall off map!.
     @dying = true
     after(500) do
@@ -145,18 +148,18 @@ class BlockBoy < GameObject
       else
         game_state.next_level
         @can_fire = false
-        game_state.notify 'Level complete'
+        Sound['media/level.wav'].play
       end
     end
 
     each_bounding_box_collision(Coin) do | _, coin |
       coin.die
+      Sound['media/coin.wav'].play
     end
 
     each_bounding_box_collision(PowerUp) do | _, item |
       item.die
       @can_fire = true
-      game_state.notify 'Press X to fire'
     end
 
     each_bounding_box_collision(Enemy.all_enemies) do |_me, _enemy|

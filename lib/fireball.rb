@@ -3,7 +3,7 @@ class Fireball < GameObject
   traits :collision_detection, :velocity, :timer
 
   def setup
-    @animations = Chingu::Animation.new(file: 'items_16x16.png')
+    @animations = Chingu::Animation.new(file: 'media/items_16x16.png')
     @animations.frame_names = { fire: 8..11 }
 
     @animation = @animations[:fire]

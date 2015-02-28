@@ -1,6 +1,15 @@
 class Music
   def self.play
-   # Song['media/JumpShot.ogg'].play
-   @song = Song['media/01.ogg'].play
+    @@index ||= 1
+    @@song ||= nil
+    
+    if @@song.nil? || @@song.playing? == false
+      @@song = Song["media/0#{@@index}.ogg"]
+      @@song.play
+      @@index += 1
+      if @@index == 4
+        @@index = 1
+      end
+    end
   end
 end
